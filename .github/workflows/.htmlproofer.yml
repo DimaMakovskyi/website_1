@@ -1,7 +1,0 @@
----
-url_ignore:
-  - "#about-us"
-  - "#new-mobile-games"
-  - "#testimonials"
-checks_to_ignore:
-  - ExternalLinkCheck
