@@ -1,84 +1,11 @@
-/* Загальні стилі для .header */
 .header {
-    background-image: url("../img/astronaut/astronaut.png");
-    background-size: cover; 
-    background-repeat: no-repeat; 
-    background-position: center;
-    height: 850px;
-}
-/* Стилі навігації */
-.header__navigation {
-    padding: 30px 24px;
-    display: flex;
-    justify-content: space-between;
-}
-.header__navigation-logo img {
-    width: 130px;
-}
-.header__navigation-logo{
-    width: 130px;
-    z-index: 50;
-}
-.header__navigation-menu-media {
-    display: inline-block;
-}
-.header__navigation-menu{
-    display: none;
-}
-.header__navigation-menu-link {
-    position: relative;
-    text-decoration: none;
-    color: var(--menu-color);
-    font-size: 18px;
-    display: block;
-    overflow: hidden;
-    white-space: nowrap;
-    font-family: "Nunito", sans-serif;
-    font-optical-sizing: auto;
-    font-weight: 700;
-    font-style: normal;
-}
-.header__navigation-menu-link:hover{
-    text-decoration: none;
-    color:var(--color-main-text)
-}
-.header .header__navigation-menu-link span {
-    margin-right: 5px;
+    background: #fbbe36;
 }
 
-a.header__menu-media_force:hover .outer_bDW {
-    fill: var(--dark-orange-for-button); /* Темніший колір для фону */
-}
-
-a.header__navigation-menu-media_force:hover path.outer_bDW {
-    fill: var(--dark-orange-for-button); /* Темніший колір для символу */
-}
-/* Стилі інформаційного блоку */
-.header__start_info {
-    padding: 100px 24px;
-}
-.header__start_info-introduction {
-    font-size: 56px;
-    font-family: "Fredoka", cursive;
-    font-optical-sizing: auto;
-    font-weight: 700;
-    color: var(--color-main-text);
-    line-height:1;
-}
-.header__start_info-about_company {
-    font-size: 20px;
-    font-family: "Nunito", cursive;
-    font-optical-sizing: auto;
-    font-weight: 700;
-    color: var(--color-main-text);
-    margin-top: 55px;
-}
-/* Стилі списків */
 .header__navigation-drop_down_menu{
     display: flex;
     position: relative;
     z-index: 50;
-    top:35px;
     right: 18px;
     align-items: center;
     justify-content: flex-start;
@@ -127,147 +54,195 @@ a.header__navigation-menu-media_force:hover path.outer_bDW {
     flex-direction: column;
 }
 
-.button-name-learn-more{
-    background-color: var(--button-color);
+.header__navigation_logo{
+    width: 252px;
+    z-index: 50;
 }
-.button-name-learn-more:hover{
-    background-color: var(--dark-button-color);
-}
-/* Адаптивні стилі */
-@media (min-width: 768px) {
 
-    .header__start_info {
-        width: 72%;
-        padding: 120px 40px 170px 40px;
+.header__introdusion_media_link{
+    width: 32px;
+}
+
+.header__navigation{
+    display: flex;
+    width: 90%;
+    justify-content: space-between;
+    text-align: center;
+    margin: auto;
+    padding-top: 30px;
+    align-items: center;
+}
+
+.header__info{
+    display: none;
+}
+.header__navigation_menu{
+    display: none;
+}
+.button_open{
+    width: 100%;
+    height: 100%;
+    background: #fbbe36;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.header__navigation_menu_pages_link{
+    font-family: "Lato", sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: rgb(79, 80, 71);
+    padding: 10px 0;
+}
+.header__read-about_freeze{
+    color: rgb(231, 39, 45);
+    font-family: "Permanent Marker", cursive;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+.header__read-about_info{
+    color: white;
+    font-family: "Rubik", sans-serif;
+    font-size: 56px;
+    font-weight: 700;
+    margin-bottom: 30px;
+}
+.header__read-about_introduction{
+    color: rgb(79, 80, 71);
+    font-family: "Lato", sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 30px;
+}
+.header__read-about{
+    width: 90%;
+    margin: auto;
+    padding: 100px 0 90px 0;
+}
+.header__read-about_call-to-us_button{
+    background: #e7272d;
+}
+.header__read-about_call-to-us img{
+    width: 50px;
+}
+.header__read-about_call-to-us_more{
+    display: flex;
+    width: 210px;
+    justify-content: space-between;
+    align-items: center;
+}
+.header__read-about_call-to-us_descrive_1{
+    color: white;
+    font-family: "Lato", sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+}
+.header__read-about_call-to-us_descrive_2{
+    color: #4f5047;
+    font-family: "Lato", sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+}
+
+@media (max-width: 950px) {
+    .header__navigation_menu_pages{
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        top: 100px;
     }
-    .header__navigation {
-        padding: 30px 40px;
+    .header__introdusion_menu_info, .header__introdusion_menu_media{
+        position: relative;
+        top: 100px;
     }
-    .header__start_info-introduction{
-        font-size: 65px;
+    .header__introdusion_menu_info p, .header__introdusion_menu_info a{
+        color: white;
+        font-size: 14px;
+        font-family: "Lato", sans-serif;
+        font-weight: 700;
+        padding: 10px 0;
     }
-    .header__navigation-logo img {
-        width: 130px;
+    .header__introdusion_menu_media{
+        padding-top: 15px;
     }
-    .header{
-        height: 942px;
+    .header__read-about_call-to-us_button{
+        margin-bottom: 35px;
+    }
+}
+@media (min-width: 680px) {
+    .header__read-about_info, .header__read-about_introduction{
+        width: 50%;
     }
 
 }
-@media (max-width: 990px){
-    .header__navigation-menu-link{
-        position: relative;
-        top: 140px;
-        margin: 15px 0;
-        text-align: center;
+@media (min-width: 950px) {
+    .header {
+        background-image: url("../img/backgroundheader.jfif");
+        background-size: cover; 
+        background-repeat: no-repeat; 
+        background-position: center;
     }
-    .header__navigation-menu-media{
-        position: relative;
-        top: 140px;
-        margin: 15px 0;
-        text-align: center;
+    .header__introdusion_menu_info{
+        display: none;
     }
-    .dont_scrol{
-        overflow: hidden;
+    .header__introdusion_menu_media{
+        display: flex;
+        width: 116px;
+        justify-content: space-between;
     }
-}
-@media (min-width: 990px){
-    .header__navigation-menu-link{
-        font-size: 16px;
+    .back{
+        background: #efad18;
+        height: 51px;
+        display: flex;
+        align-items: center;
+    }
+    .header__info{
+        width: 90%;
+        margin: auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
     .header__navigation-drop_down_menu{
         display: none;
     }
-    .header__navigation-menu ul{
+    .header__info_street, .header__indo_email, .header__info_time-work{
+        color: white;
+        font-size: 15px;
+        font-family: "Lato", sans-serif;
+        font-weight: 700;
+    }
+    .header__navigation_menu_pages{
+        width: 380px;
         display: flex;
-        width: 568px;
         justify-content: space-between;
     }
-    .header__navigation-menu{
-        height: 76px;
-        justify-content: space-between;
+    .header__navigation_menu{
         display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-    }
-    .header__navigation-menu-media{
-        margin-top: 20px;
-    }
-    .button_open{
-        display: flex;
-        position: static;
-        width: 100%;
-        height: 100%;
-        background: none;
-    }
-    .header__navigation-menu-link:hover {
-        text-decoration: none;
-        color: var(--color-main-text);
-        top: 0;
-    }
-    
-    .header__navigation-menu-link::after {
-        content: "";
-        position: absolute;
-        left: 0;
-        bottom: 0;
-        width: 0; /* Спочатку лінія має нульову ширину */
-        height: 2px;
-        background-color: var(--color-main-text);
-        transition: width 0.3s ease; 
-    }
-    
-    .header__navigation-menu-link:hover::after {
-        width: 35px; 
-    }
-    
-}
-@media (min-width: 1200px){
-    .header__navigation-menu ul{
-        display: flex;
-        width: 580px;
-        justify-content: space-between;
-    }
-    .header__navigation-menu{
-        display: flex;
-        height: 76px;
+        flex-direction: row;
+        width: 60%;
         justify-content: space-between;
         align-items: center;
-        width: 720px;
-        flex-direction: row;
     }
-    .centering {
-        width: 1200px;
-        margin: auto;
+    .header__read-about_call-to-us{
+        margin-top: 55px;
+        display: flex;
+        width: 380px;
+        justify-content: space-between;
+        align-items: center;
     }
-    .header__navigation{
-        padding: 30px 40px;
+    .header__read-about_call-to-us_button{
+        margin-top: 0;
     }
-    .header__start_info-introduction, .header__start_info-about_company {
-        width: 60%;
-    }
-    .header__start_info {
-        padding-top: 170px;
-    }
-    .header__start_info {
-        padding: 170px 40px 170px 40px;
-        
-    }
-    .header__navigation-menu-media{
-        margin: 0;
-        display: inline-block;
-    }
-    .header__start_info-introduction{
-        font-size: 75px;
-    }
-    .header{
-        background-position: 0% 0%;
-        height: 1110px;
+    .header__read-about_info{
+        font-size: 70px;
     }
 }
-@media (min-width: 1500px){
-    .centering {
-        width: 1400px;
+@media (min-width: 12000px) {
+
+    .container{
+        width: 1200px;
         margin: auto;
     }
 }
