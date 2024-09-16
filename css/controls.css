@@ -1,0 +1,17 @@
+.button{
+    display: inline-block;
+    font-size: 15.4px;
+    font-family: "Fredoka", cursive;
+    font-optical-sizing: auto;
+    font-weight: 700;
+    color: var(--color-main-text);
+    padding: 20px 51px;
+    border-radius: 20px;
+    margin-top: 25px;
+}
+.button:hover{
+    transform: 10;
+    text-decoration: none;
+    display: inline-block;
+    color: var(--color-main-text);
+}
