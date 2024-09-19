@@ -1,5 +1,6 @@
+
 .header {
-    background: #fbbe36;
+    background: var(--yellow-background);
 }
 
 .header__navigation-drop_down_menu{
@@ -75,6 +76,8 @@
 
 .header__info{
     display: none;
+    background: var(--yellow-background-back);
+    width: 120%;
 }
 .header__navigation_menu{
     display: none;
@@ -82,36 +85,22 @@
 .button_open{
     width: 100%;
     height: 100%;
-    background: #fbbe36;
+    background: var(--yellow-background);
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 .header__navigation_menu_pages_link{
-    font-family: "Lato", sans-serif;
+    font-family: var(--font-main);
     font-size: 17px;
     font-weight: 700;
-    color: rgb(79, 80, 71);
+    color: var(--dark-gray);
     padding: 10px 0;
 }
-.header__read-about_freeze{
-    color: rgb(231, 39, 45);
-    font-family: "Permanent Marker", cursive;
-    font-size: 16px;
-    font-weight: 700;
-    margin-bottom: 20px;
-}
 .header__read-about_info{
-    color: white;
-    font-family: "Rubik", sans-serif;
+    color: var(--color-main-text);
+    font-family: var(--font-heading);
     font-size: 56px;
-    font-weight: 700;
-    margin-bottom: 30px;
-}
-.header__read-about_introduction{
-    color: rgb(79, 80, 71);
-    font-family: "Lato", sans-serif;
-    font-size: 20px;
     font-weight: 700;
     margin-bottom: 30px;
 }
@@ -121,7 +110,7 @@
     padding: 100px 0 90px 0;
 }
 .header__read-about_call-to-us_button{
-    background: #e7272d;
+    background: var(--red-for-button);
 }
 .header__read-about_call-to-us img{
     width: 50px;
@@ -133,16 +122,13 @@
     align-items: center;
 }
 .header__read-about_call-to-us_descrive_1{
-    color: white;
-    font-family: "Lato", sans-serif;
+    color: var(--color-main-text);
+    font-family: var(--font-main);
     font-size: 17px;
     font-weight: 700;
 }
 .header__read-about_call-to-us_descrive_2{
-    color: #4f5047;
-    font-family: "Lato", sans-serif;
     font-size: 17px;
-    font-weight: 700;
 }
 
 @media (max-width: 950px) {
@@ -157,9 +143,9 @@
         top: 100px;
     }
     .header__introdusion_menu_info p, .header__introdusion_menu_info a{
-        color: white;
+        color: var(--color-main-text);
         font-size: 14px;
-        font-family: "Lato", sans-serif;
+        font-family: var(--font-main);
         font-weight: 700;
         padding: 10px 0;
     }
@@ -174,7 +160,6 @@
     .header__read-about_info, .header__read-about_introduction{
         width: 50%;
     }
-
 }
 @media (min-width: 950px) {
     .header {
@@ -192,7 +177,7 @@
         justify-content: space-between;
     }
     .back{
-        background: #efad18;
+        background: var(--yellow-background);
         height: 51px;
         display: flex;
         align-items: center;
@@ -208,9 +193,9 @@
         display: none;
     }
     .header__info_street, .header__indo_email, .header__info_time-work{
-        color: white;
+        color: var(--color-main-text);
+        font-family: var(--font-main);
         font-size: 15px;
-        font-family: "Lato", sans-serif;
         font-weight: 700;
     }
     .header__navigation_menu_pages{
@@ -236,11 +221,11 @@
         margin-top: 0;
     }
     .header__read-about_info{
+        font-family: var(--font-heading);
         font-size: 70px;
     }
 }
 @media (min-width: 12000px) {
-
     .container{
         width: 1200px;
         margin: auto;

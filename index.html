@@ -10,14 +10,96 @@
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
 </head>
 
 <body>
     <!-- 1 Makovskiy -->
     <header data-hx-trigger="load" data-hx-swap="outerHTML" data-hx-get="global.header.partial.html"></header>
     
-    <!-- mian -->
-    
+    <!-- main -->
+    <main> 
+        <section class="burger">
+            <div class="favorite-burger">
+                <div class="favorite-burger__img">
+                    <img src="img/burgerS1.png" alt="">
+                </div>
+                <div class="favorite-burger__about-us">
+                    <p class="favorite-burger__about-us_ab red-text">ABOUT US</p>
+                    <p class="favorite-burger__about-us_favorite title">Your Favorite Burger Food Truck</p>
+                    <p class="favorite-burger__about-us_favorite_delicious subtitle">Delicious burgers are waiting for you in Los Angeles.</p>
+                    <p class="favorite-burger__about-us_favorite_delicious main-text">Freddy Burgers is a superior burger food truck you can find roaming the streets of Los Angeles. We are a symbol of independence and premium budget food on the go. We cook our burgers using the freshest and the highest quality local ingredients.</p>
+                    <div class="favorite-burger__about-us_big-list">
+                        <div class="favorite-burger__about-us_list">
+                            <svg width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="10" cy="10" r="9" fill="#F7B500" />
+                                <polyline points="7,11 9,13 13,7" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <p class="main-text-bolt">Hot burgers</p>
+                        </div>
+                        <div class="favorite-burger__about-us_list">
+                            <svg width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="10" cy="10" r="9" fill="#F7B500" />
+                                <polyline points="7,11 9,13 13,7" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <p class="main-text-bolt">Fresh salads</p>
+                        </div>
+                        <div class="favorite-burger__about-us_list">
+                            <svg width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="10" cy="10" r="9" fill="#F7B500" />
+                                <polyline points="7,11 9,13 13,7" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <p class="main-text-bolt">Beverages</p>
+                        </div>
+                    </div>
+                    <p class="favorite-burger__about-us_favorite_delicious main-text">If you want to arrange a budget party and love our gourmet burgers, you can book our truck and feed your guests with excellent street food.</p>
+                    <a href="" class="favorite-burger__about-us_favorite_more-about-us button">More About Us</a>
+                </div>
+            </div>
+        </section>
+        <section class="burger-off">
+            <div class="burger-off__block">
+                <p class="burger-off_title title">Grab Your 10% off</p>
+                <p class="burger-off__main-text main-text">The discount is available to all new clients that order
+                    delivery or catering services.</p>
+                <a href="" class="burger-off__button button">Use Discount</a>
+            </div>
+        </section>
+        <section class="meat-quality">
+            <div class="meat-quality__burger">
+                <img src="img/burger_s3.jfif" alt="">
+            </div>
+            <div class="meat-quality__recipte">
+                <p class="red-text">INGREDIENTS</p>
+                <p class="title">Meat Quality</p>
+                <p class="subtitle">We use the finest patties for our burgers.</p>
+                <p class="main-text">Many will agree that the most important thing in a burger is a juicy patty made from good meat. At Freddy Burgers, we select meat producers carefully and ensure that every burger tastes perfect.</p>
+                <div class="meat-quality__recipte-us_list">
+                    <svg width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="10" cy="10" r="9" fill="#F7B500" />
+                        <polyline points="7,11 9,13 13,7" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <p class="main-text-bolt">Humanely handled;</p>
+                </div>
+                <div class="meat-quality__recipte-us_list">
+                    <svg width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="10" cy="10" r="9" fill="#F7B500" />
+                        <polyline points="7,11 9,13 13,7" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <p class="main-text-bolt">Grass-fed and raised on local family ranches;</p>
+                </div>
+                <div class="meat-quality__recipte-us_list">
+                    <svg width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="10" cy="10" r="9" fill="#F7B500" />
+                        <polyline points="7,11 9,13 13,7" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <p class="main-text-bolt">No steroids, antibiotics, or growth hormones added.</p>
+                </div>
+                <p class="main-text meat-quality__recipte_unter-text">We also have a number of vegan options due to our collaboration with Beyond Meat and Impossible Foods.</p>
+            </div>
+        </section>
+    </main>
 
 </body>
 </html>

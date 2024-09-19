@@ -10,30 +10,19 @@
 }
 
 :root {
-    --ui-brand-color: #f9ba38;
-    --collor-accent: rgb(249, 186, 56);
     --color-main-text: #ffffff;
-    --text-color: black;
-    --border-color: black;
-    --accent-color:#824b4e;
-    --color-icons:rgb(218,50,101);
-    --icon-color:#961043;
-    --color-berry: #b33c5a;
-    --color-white: #ffffff;
-    --color-sunshine-yellow: rgb(249, 186, 56);
-    --menu-color:rgba(255, 255, 255, 0.73);
-    --color-background-card: rgb(14, 49, 84);
-    --button-color:#19ca6d;
-    --dark-button-color:rgb(20, 168, 91);
-    scroll-behavior: smooth;
-    --border-top-games-color: #14385d;
-    --title-top-game-color: #19ca6d;
-    --subtitle-top-game-color: #c4cdd6;
-    --dark-orange-for-button: #f9ba38;
-    --bacground-when-button-active: #1d4759;
-    --button-submit-hover: #c1305c;
-    --color-yellow: #f8ba39;
-    --color-white: #ffffff;
+    --red-for-button:#e7272d;
+    --red-for-text:rgb(231, 39, 45);
+    --yellow-background:#fbbe36;
+    --yellow-background-back:#efad18;
+    --main-text-gray:rgb(103, 103, 103);
+    --dark-gray:rgb(79, 80, 71);
+    --six-six-gray:rgb(69, 69, 69);
+    --brow-site:rgb(40, 38, 35);
+
+    --font-main: 'Lato', sans-serif; /* Основний шрифт для загального тексту */
+    --font-heading: 'Rubik', sans-serif; /* Шрифт для заголовків */
+    --for-red-font:"Permanent Marker", cursive;
 }
 
 img {
@@ -56,4 +45,45 @@ li {
 }
 p{
   margin: 0;
+}
+
+.red-text{
+  color: var(--red-for-text);
+  font-family: var(--for-red-font);
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+.title{
+  font-family: var(--font-heading);
+  font-size: 38px;
+  font-weight: 700;
+  color: var(--brow-site);
+  margin-bottom: 20px;
+}
+
+.subtitle{
+  color: var(--dark-gray);
+  font-family: var(--font-main);
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+.main-text{
+  color: var(--main-text-gray);
+  font-family: var(--font-main);
+  font-size: 17px;
+  font-weight: 400;
+  margin-bottom: 20px;
+}
+.main-text-bolt{
+  color: var(--six-six-gray);
+  font-family: var(--font-main);
+  font-size: 17px;
+  font-weight: 700;
+}
+@media (min-width: 950px){
+  .title{
+    font-size: 56px;
+  }
 }

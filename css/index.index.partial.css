@@ -1,0 +1,128 @@
+.favorite-burger__about-us_favorite_more-about-us{
+    background-color: var(--red-for-button);
+    margin-bottom: 30px;
+}
+.favorite-burger__about-us_list{
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 0 12px 12px 0;
+}
+
+.favorite-burger__about-us_big-list{
+    display: flex;
+    flex-wrap: wrap;
+
+}
+.favorite-burger{
+    width: 90%;
+    margin: auto;
+}
+.favorite-burger__img{
+    margin: 90px 0 50px 0;
+}
+.burger {
+    background-image: url("../img/backgroundS2.jfif");
+    background-size: cover; 
+    background-repeat: no-repeat; 
+    background-position: center;
+}
+.burger-off{
+   background-color: var(--yellow-background); 
+}
+.burger-off_title{
+    color: var(--color-main-text);
+}
+.burger-off__main-text{
+    color: var(--color-main-text);
+    width: 300px;
+}
+.burger-off__button{
+    background: var(--red-for-button);
+    margin-bottom: 20px;
+}
+.burger-off__button:hover{
+    background: var(--brow-site);
+}
+.burger-off__block{
+    width: 90%;
+    margin: auto;
+}
+.burger-off_title{
+    font-size: 30px;
+    padding: 30px 0 0 0;
+}
+.burger-off__main-text{
+    margin: 0 0 10px 0;
+}
+.meat-quality__recipte{
+    width: 90%;
+    margin: 60px auto;
+}
+.meat-quality__recipte-us_list{
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    line-height: 1.2;
+    margin-top: 12px;
+}
+.meat-quality__recipte-us_list p{
+    max-width: 200px;
+}
+.meat-quality__recipte_unter-text{
+    margin-top: 20px;
+}
+.meat-quality__burger{
+    margin: 0 0 70px 0;
+}
+@media (min-width: 860px){
+    .favorite-burger__about-us{
+        width: 44.5%;
+    }
+    .favorite-burger__img{
+        width: 44.5%;
+        margin: 0;
+    }
+    .favorite-burger{
+        margin: 95px auto;
+        display: flex;
+        align-items: flex-start;
+    }
+    .favorite-burger__about-us_favorite_more-about-us{
+        margin: 0;
+    }
+    .burger-off__block{
+        width: 80%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .burger-off_title{
+        font-size: 36px;
+    }
+    .burger-off__main-text{
+        width: 360px;
+    }
+    .meat-quality__burger{
+        width: 50%;;
+    }
+    .meat-quality__burger img {
+        height: calc(100% + 6%);
+        object-fit: cover;
+      }
+    .meat-quality__recipte{
+        width: 50%;
+        margin: 6%;
+    }
+    .meat-quality{
+        display: flex;
+    }
+    .burger-off_title{
+        margin: 0;
+        padding: 0;
+    }
+    .burger-off__main-text{
+        margin: 0;
+        padding: 0;
+  }
+}
