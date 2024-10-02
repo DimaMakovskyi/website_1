@@ -130,7 +130,6 @@
 .header__read-about_call-to-us_descrive_2{
     font-size: 17px;
 }
-
 @media (max-width: 950px) {
     .header__navigation_menu_pages{
         display: flex;

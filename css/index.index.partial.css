@@ -75,6 +75,119 @@
 .meat-quality__burger{
     margin: 0 0 70px 0;
 }
+.box{
+    width: 90%;
+    margin: 30px auto;
+    height: calc(100% + 100px);
+    border-radius: 10px;
+    background: var(--color-main-text);
+    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+}
+.services__catering_sup, .services__franchising_sup{
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin: 0 0 20px 0;
+}
+.services__franchising_info, .services__catering_info{
+    margin: auto;
+    width: 90%;
+}
+.services__franchising_sup .main-text{
+    margin: 0;
+}
+.services__catering_sup .main-text{
+    margin: 0;
+}
+.center{
+    text-align: center;
+    display: block;
+    width: 90%;
+    margin: 15px auto;
+}
+.services{
+    background-image: url("../img/back_s4.jfif");
+    background-size: cover; 
+    background-repeat: no-repeat; 
+    background-position: center;
+}
+.services__franchising_img img{
+    border-radius: 10px 10px 0 0;
+}
+.services__catering_img img{
+    border-radius: 10px 10px 0 0;
+}
+.services__catering_info_button, .services__franchising_info_button{
+    background: var(--yellow-background);
+    margin: 0 0 30px 0;
+}
+.services__catering_info_button:hover, .services__franchising_info_button:hover{
+    background: var(--brow-site);
+}
+.services{
+    padding: 30px 0;
+}
+.weekly-schedule__cart-work-day div{
+    background: var(--color-main-text);
+    width: 90%;
+    margin: auto;
+    margin-bottom: 30px;
+    height: 329px;
+    text-align: center;
+    border-radius: 10px;
+}
+.weekly-schedule__cart-work-day_button{
+    background: var(--red-for-button);
+    padding: 10px 30px;
+}
+.weekly-schedule{
+    background: #fbbe36;
+}
+.name-day{
+    font-size: 16px;
+    padding-top: 30px;
+    margin-bottom: 10px;
+}
+.number-day{
+    font-size: 30px;
+    color: var(--yellow-background);
+}
+.name-street, .name-chaf{
+    font-size: 17px;
+    padding: 0;
+    margin: 0;
+}
+.weekly-schedule{
+    padding: 110px 0 90px 0;
+}
+.weekly{
+    color: var(--color-main-text);
+    font-size: 38px;
+    width: 90%;
+    text-align: center;
+    margin: 0 auto 0;
+}
+.wonder{
+    font-size: 20px;
+    text-align: center;
+    width: 90%;
+    margin: 0 auto 30px;
+}
+.weekly-schedule img{
+    width: 50px;
+    margin-right: 10px;
+}
+.no-p{
+    margin: 0;
+}
+.w-90{
+    width: 90%;
+    margin: 20px auto 20px;
+    justify-content: flex-start;
+}
+.weekly-schedule__cart-work-day{
+    margin-top: 60px;
+}
 @media (min-width: 860px){
     .favorite-burger__about-us{
         width: 44.5%;
@@ -124,5 +237,63 @@
     .burger-off__main-text{
         margin: 0;
         padding: 0;
-  }
+    }
+    .services__franchising, .services__catering{
+        display: flex;
+    }
+    .services__catering{
+        flex-direction: row-reverse;
+    }
+    .services__franchising_img img{
+        border-radius: 10px 0 0 10px;
+        height: 100%;
+    }
+    .services__catering_img img{
+        border-radius: 0 10px 10px 0;
+        justify-content: end;
+        height: 100%;
+    }
+    .services__franchising_info, .services__catering_info{
+        margin: 3% 5%;
+    }
+    .weekly-schedule__cart-work-day div{
+        width: 45%;
+    }
+    .weekly-schedule__cart-work-day{
+        display: flex;
+        width: 90%;
+        justify-content: space-between;
+        margin: 60px auto 0;
+    }
+    .weekly{
+        text-align: left;
+    }
+    .wonder{
+        text-align: left;
+    }
+}
+@media (min-width: 1100px){
+    .weekly-s{
+        width: 300px;
+
+    }
+    .container{
+        display: flex;
+        align-items: center;
+        width: 90%;
+        justify-content: space-between;
+    }
+    .weekly-schedule__cart-work-day{
+        margin-left: 0;
+        margin-right: 0;
+    }
+    .weekly-schedule__cart-work-day div{
+        width: 40%;
+    }
+    .weekly-schedule__cart-work-day{
+        width: 70%;
+    }
+    .weekly-schedule{
+        padding: 0;
+    }
 }
