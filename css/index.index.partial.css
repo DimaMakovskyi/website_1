@@ -276,12 +276,13 @@
     .weekly-s{
         width: 300px;
     }
-    
+
     .containerv2{
         display: flex;
         align-items: center;
         width: 90%;
         justify-content: space-between;
+        margin: auto;
     }
     .weekly-schedule__cart-work-day{
         margin-left: 0;
