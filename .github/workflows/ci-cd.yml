@@ -96,7 +96,7 @@ jobs:
       #     docker push ${{ secrets.DOCKER_USERNAME }}/projectname:latest
 
   deploy:
-    if: env.ENABLE_DEPLOY == 'true' 
+    if: ${{ env.ENABLE_DEPLOY == 'true' }}
     runs-on: ubuntu-latest
     needs: build
 
