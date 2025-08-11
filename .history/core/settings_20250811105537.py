@@ -327,13 +327,6 @@ ALLOWED_DOCUMENT_MIME_TYPES = [
     "application/x-rar-compressed",
 ]
 
-ELASTICSEARCH_URL = config("ELASTICSEARCH_URL", default="http://localhost:9200")
-
-ELASTICSEARCH_DSL = {
-    "default": {
-        "hosts": ELASTICSEARCH_URL
-    }
-}
 MAX_IMAGE_SIZE_MB = 10
 MAX_DOCUMENT_SIZE_MB = 20
 MAX_IMAGE_DIMENSIONS = (5000, 5000)
