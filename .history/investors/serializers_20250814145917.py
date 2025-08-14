@@ -3,8 +3,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 from investors.models import Investor, SavedStartup
 from startups.models import Startup
-from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError
 
 
 class InvestorSerializer(serializers.ModelSerializer):
@@ -47,12 +46,10 @@ class InvestorSerializer(serializers.ModelSerializer):
 
 class SavedStartupSerializer(serializers.ModelSerializer):
     """
-    Serializer for creating and retrieving SavedStartup records.
-
-    Ensures:
-    - Only authenticated investors can save startups.
-    - Prevents saving own startup.
-    - Avoids duplicates via validator and IntegrityError handling.
+    - Лише інвестор може створювати.
+    - Не можна зберігати власний стартап.
+    - Заборонено змінювати investor/startup через PATCH/PUT.
+    - Дублі: 400 через перехоплення IntegrityError.
     """
     investor = serializers.PrimaryKeyRelatedField(read_only=True)
     startup = serializers.PrimaryKeyRelatedField(queryset=Startup.objects.all(), write_only=True)
@@ -74,22 +71,35 @@ class SavedStartupSerializer(serializers.ModelSerializer):
             'investor': {'read_only': True, 'required': False},
             'startup': {'write_only': True},
         }
+        # (Опційно) Увімкнути також валідатор унікальності на рівні DRF:
+        # validators = [
+        #     UniqueTogetherValidator(
+        #         queryset=SavedStartup.objects.all(),
+        #         fields=['investor', 'startup'],
+        #         message='Already saved.'
+        #     )
+        # ]
 
     def validate(self, attrs):
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         investor = getattr(user, 'investor', None)
+
+        is_create = self.instance is None
+        has_startup_in_payload = 'startup' in attrs
         startup = attrs.get('startup')
 
         errors = {}
+
         if not investor:
             errors.setdefault('non_field_errors', []).append('Only investors can save startups.')
 
-        if startup is not None and getattr(startup, 'user_id', None) == getattr(user, 'id', None):
-            errors['startup'] = 'You cannot save your own startup.'
+        if is_create and startup is None:
+            errors.setdefault('startup', []).append('This field is required.')
 
-        if self.instance is None and startup is None:
-            errors['startup'] = 'This field is required.'
+        if has_startup_in_payload and startup is not None:
+            if getattr(startup, 'user_id', None) == getattr(user, 'id', None):
+                errors.setdefault('startup', []).append('You cannot save your own startup.')
 
         if errors:
             raise serializers.ValidationError(errors)
@@ -101,21 +111,17 @@ class SavedStartupSerializer(serializers.ModelSerializer):
         if not user or not hasattr(user, 'investor'):
             raise serializers.ValidationError({'non_field_errors': ['Only authenticated investors can save startups.']})
 
-        if validated_data.get('notes') is None:
-            validated_data['notes'] = ''
-
-        obj = self.Meta.model(**validated_data)
-
+        # notes вже опційне (null=True, blank=True), тож не потрібно форсувати ''
         try:
-            obj.clean() 
-        except DjangoValidationError as e:
-            if hasattr(e, 'message_dict'):
-                raise serializers.ValidationError(e.message_dict)
-            raise serializers.ValidationError({'non_field_errors': e.messages})
-
-        try:
-            with transaction.atomic():
-                obj.save()
-                return obj
+            return SavedStartup.objects.create(investor=user.investor, **validated_data)
         except IntegrityError:
+            # перетворюємо БД-виняток у дружнє 400
             raise serializers.ValidationError({'non_field_errors': ['Already saved.']})
+
+    def update(self, instance, validated_data):
+        """
+        Заборона зміни investor/startup через PATCH/PUT.
+        """
+        validated_data.pop('investor', None)
+        validated_data.pop('startup', None)
+        return super().update(instance, validated_data)

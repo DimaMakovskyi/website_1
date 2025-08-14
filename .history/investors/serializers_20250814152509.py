@@ -104,7 +104,7 @@ class SavedStartupSerializer(serializers.ModelSerializer):
         if validated_data.get('notes') is None:
             validated_data['notes'] = ''
 
-        obj = self.Meta.model(**validated_data)
+        obj = self.Meta.model(investor=user.investor, **validated_data)
 
         try:
             obj.clean() 

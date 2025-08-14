@@ -79,12 +79,15 @@ class SavedStartupSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         investor = getattr(user, 'investor', None)
-        startup = attrs.get('startup')
 
+        startup = attrs.get('startup')  # на create буде інстанс Startup
         errors = {}
+
         if not investor:
             errors.setdefault('non_field_errors', []).append('Only investors can save startups.')
 
+        # Заборона зберігати власний стартап — працює і на create, і на update,
+        # якщо хтось таки пошле 'startup' у PATCH (ми все одно не дамо змінити).
         if startup is not None and getattr(startup, 'user_id', None) == getattr(user, 'id', None):
             errors['startup'] = 'You cannot save your own startup.'
 
@@ -101,21 +104,17 @@ class SavedStartupSerializer(serializers.ModelSerializer):
         if not user or not hasattr(user, 'investor'):
             raise serializers.ValidationError({'non_field_errors': ['Only authenticated investors can save startups.']})
 
+        startup = validated_data.get('startup')
+
+        # ДУБЛЮЄМО критичну перевірку і тут (щоб точно не пройти повз)
+        if startup is not None and getattr(startup, 'user_id', None) == getattr(user, 'id', None):
+            raise serializers.ValidationError({'startup': 'You cannot save your own startup.'})
+
         if validated_data.get('notes') is None:
             validated_data['notes'] = ''
 
-        obj = self.Meta.model(**validated_data)
-
-        try:
-            obj.clean() 
-        except DjangoValidationError as e:
-            if hasattr(e, 'message_dict'):
-                raise serializers.ValidationError(e.message_dict)
-            raise serializers.ValidationError({'non_field_errors': e.messages})
-
         try:
             with transaction.atomic():
-                obj.save()
-                return obj
+                return SavedStartup.objects.create(investor=user.investor, **validated_data)
         except IntegrityError:
             raise serializers.ValidationError({'non_field_errors': ['Already saved.']})

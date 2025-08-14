@@ -24,9 +24,13 @@ class InvestorViewSet(viewsets.ModelViewSet):
 class IsSavedStartupOwner(BasePermission):
     """Allow update/delete only for the owner of the SavedStartup."""
     def has_object_permission(self, request, view, obj):
+        # Користувач без інвестор-профілю точно не власник
         if not hasattr(request.user, "investor"):
             return False
+        # Порівнюємо інвестора запису з інвестором користувача
         return obj.investor_id == request.user.investor.pk
+        # альтернативно:
+        # return obj.investor.user_id == request.user.pk
 
 
 class SavedStartupViewSet(viewsets.ModelViewSet):
