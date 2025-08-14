@@ -223,7 +223,10 @@ class SavedStartupAPITests(BaseInvestorTestCase):
         self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND, res.data)
         self.assertTrue(SavedStartup.objects.filter(id=foreign_obj.id).exists())
 
+    # ==== ДОДАНІ ТЕСТИ ====
+
     def test_cannot_change_investor_or_startup_via_patch(self):
+        """PATCH не має дозволяти змінювати зв’язки investor/startup."""
         obj = SavedStartup.objects.create(investor=self.investor, startup=self.startup, status="watching")
         url = reverse("saved-startup-detail", args=[obj.id])
         payload = {"investor": 999999, "startup": 999999, "status": "contacted"}
@@ -234,12 +237,14 @@ class SavedStartupAPITests(BaseInvestorTestCase):
         self.assertEqual(obj.startup_id, self.startup.id)
 
     def test_create_without_notes_ok(self):
+        """POST без notes проходить, якщо поле опційне."""
         res = self.client.post(self.list_url, {"startup": self.startup.id, "status": "watching"}, format="json")
         self.assertEqual(res.status_code, status.HTTP_201_CREATED, res.data)
         obj = SavedStartup.objects.get(id=res.data["id"])
         self.assertTrue(obj.notes in (None, ""))
 
     def test_patch_notes_to_null_or_empty(self):
+        """PATCH може занулити/очистити notes (якщо дозволено моделлю/серіалізатором)."""
         obj = SavedStartup.objects.create(investor=self.investor, startup=self.startup, status="watching", notes="x")
         url = reverse("saved-startup-detail", args=[obj.id])
         res = self.client.patch(url, {"notes": None}, format="json")
@@ -248,6 +253,7 @@ class SavedStartupAPITests(BaseInvestorTestCase):
         self.assertTrue(obj.notes in (None, ""))
 
     def test_only_investor_can_list(self):
+        """Не-інвестор не має бачити список (очікуємо 400/403 згідно політики)."""
         role_user = UserRole.objects.get(role="user")
         plain_user = User.objects.create(
             email="plain2@example.com",
@@ -261,6 +267,7 @@ class SavedStartupAPITests(BaseInvestorTestCase):
         self.assertIn(res.status_code, (status.HTTP_400_BAD_REQUEST, status.HTTP_403_FORBIDDEN))
 
     def test_extra_fields_are_ignored_on_create(self):
+        """Зайві поля в POST ігноруються, а не ламають запит."""
         res = self.client.post(
             self.list_url,
             {"startup": self.startup.id, "status": "watching", "notes": "ok", "extra": "zzz"},
@@ -270,6 +277,7 @@ class SavedStartupAPITests(BaseInvestorTestCase):
         self.assertNotIn("extra", res.data)
 
     def test_duplicate_returns_400_not_500(self):
+        """Дубль з API повертає 400, а не падає IntegrityError."""
         SavedStartup.objects.create(investor=self.investor, startup=self.startup, status="watching")
         res = self.client.post(self.list_url, {"startup": self.startup.id, "status": "watching"}, format="json")
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST, res.data)

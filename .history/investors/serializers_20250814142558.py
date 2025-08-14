@@ -1,9 +1,9 @@
 from rest_framework import serializers
 
+from rest_framework.validators import UniqueTogetherValidator
 from investors.models import Investor, SavedStartup
 from startups.models import Startup
-from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError
 
 
 class InvestorSerializer(serializers.ModelSerializer):
@@ -54,69 +54,66 @@ class SavedStartupSerializer(serializers.ModelSerializer):
     - Avoids duplicates via validator and IntegrityError handling.
     """
     investor = serializers.PrimaryKeyRelatedField(read_only=True)
-    startup = serializers.PrimaryKeyRelatedField(queryset=Startup.objects.all(), write_only=True)
+    startup = serializers.PrimaryKeyRelatedField(
+        queryset=Startup.objects.all(),
+        write_only=True
+    )
     startup_name = serializers.CharField(source='startup.company_name', read_only=True)
     notes = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-
     class Meta:
         model = SavedStartup
         fields = [
             'id',
-            'investor',
-            'startup',
-            'startup_name',
+            'investor',       
+            'startup',        
+            'startup_name',   
             'status', 'notes',
-            'saved_at', 'created_at', 'updated_at',
+            'saved_at', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'investor', 'startup_name', 'saved_at', 'created_at', 'updated_at']
-        extra_kwargs = {
-            'investor': {'read_only': True, 'required': False},
-            'startup': {'write_only': True},
-        }
+        read_only_fields = [
+            'id', 'investor', 'startup_name',
+            'saved_at', 'created_at', 'updated_at'
+        ]
+        validators = [
+            UniqueTogetherValidator(
+                queryset=SavedStartup.objects.all(),
+                fields=['investor', 'startup'],
+                message="This startup is already saved."
+            )
+        ]
 
-    def validate(self, attrs):
-        request = self.context.get('request')
-        user = getattr(request, 'user', None)
-        investor = getattr(user, 'investor', None)
-        startup = attrs.get('startup')
+def validate(self, attrs):
+    request = self.context.get('request')
+    user = getattr(request, 'user', None)
+    investor = getattr(user, 'investor', None)
+    startup = attrs.get('startup')
 
-        errors = {}
-        if not investor:
-            errors.setdefault('non_field_errors', []).append('Only investors can save startups.')
+    errors = {}
 
-        if startup is not None and getattr(startup, 'user_id', None) == getattr(user, 'id', None):
-            errors['startup'] = 'You cannot save your own startup.'
+    if not investor:
+        errors.setdefault('non_field_errors', []).append('Only investors can save startups.')
 
-        if self.instance is None and startup is None:
-            errors['startup'] = 'This field is required.'
+    if startup is None:
+        errors['startup'] = 'This field is required.'
+    else:
+        if getattr(startup, 'user_id', None) == getattr(user, 'id', None):
+            errors.setdefault('startup', 'You cannot save your own startup.')
 
-        if errors:
-            raise serializers.ValidationError(errors)
-        return attrs
+    if errors:
+        raise serializers.ValidationError(errors)
+    return attrs
 
 def create(self, validated_data):
     request = self.context.get('request')
     user = getattr(request, 'user', None)
-
-    investor = validated_data.pop('investor', getattr(user, 'investor', None))
-    if not investor:
-        raise serializers.ValidationError({'non_field_errors': ['Only authenticated investors can save startups.']})
-
-    if validated_data.get('notes') is None:
-        validated_data['notes'] = ''
-
-    obj = self.Meta.model(investor=investor, **validated_data)
+    
+    if not user or not hasattr(user, 'investor'):
+        raise serializers.ValidationError(
+            {'non_field_errors': ['Only authenticated investors can save startups.']}
+        )
+    investor = getattr(user, 'investor', None)
 
     try:
-        obj.clean()
-    except DjangoValidationError as e:
-        if hasattr(e, 'message_dict'):
-            raise serializers.ValidationError(e.message_dict)
-        raise serializers.ValidationError({'non_field_errors': e.messages})
-
-    try:
-        with transaction.atomic():
-            obj.save()
-            return obj
+        return SavedStartup.objects.create(investor=investor, **validated_data)
     except IntegrityError:
         raise serializers.ValidationError({'non_field_errors': ['Already saved.']})

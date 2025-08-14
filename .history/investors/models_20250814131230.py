@@ -52,19 +52,15 @@ class Investor(Company):
         verbose_name_plural = "Investors"
 
 class SavedStartup(models.Model):
-    """
-    Intermediate model representing a startup saved (bookmarked) by an investor.
-    Stores additional metadata such as status, notes, and timestamps.
-    """
     investor = models.ForeignKey(
         'investors.Investor',
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name='saved_startups',
         db_column='investor_profile_id',
     )
     startup = models.ForeignKey(
         'startups.Startup',
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name='saved_by_investors',
         db_column='startup_profile_id',
     )
@@ -77,12 +73,9 @@ class SavedStartup(models.Model):
         ('passed', 'Passed'),
     ]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='watching')
-    notes = models.TextField(blank=True, null=True)
+    notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
-    def __str__(self):
-        return f"{self.investor} saved {self.startup}"
 
     class Meta:
         db_table = 'saved_startups'
@@ -99,3 +92,6 @@ class SavedStartup(models.Model):
             st_user_id = getattr(self.startup, 'user_id', None)
             if inv_user_id and st_user_id and st_user_id == inv_user_id:
                 raise ValidationError("You cannot save your own startup.")
+
+    def __str__(self):
+        return f"{self.investor} saved {self.startup}"

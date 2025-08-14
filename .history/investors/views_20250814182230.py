@@ -1,6 +1,7 @@
+# investors/views.py
 import logging
 from django.db import IntegrityError
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated, BasePermission
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
@@ -8,7 +9,7 @@ from rest_framework.response import Response
 from investors.models import Investor, SavedStartup
 from investors.serializers import InvestorSerializer, SavedStartupSerializer
 
-logger = logging.getLogger(__name__) 
+logger = logging.getLogger(__name__)  # -> 'investors.views'
 
 
 class InvestorViewSet(viewsets.ModelViewSet):
@@ -40,39 +41,19 @@ class SavedStartupViewSet(viewsets.ModelViewSet):
             .order_by("-saved_at")
         )
     
-    
     def create(self, request, *args, **kwargs):
-        user = request.user
-
-        if not hasattr(user, "investor"):
+        serializer = self.get_serializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except ValidationError as e:
             logger.warning(
-                "SavedStartup create denied for non-investor",
-                extra={"by_user": getattr(user, "pk", None)}
+                "SavedStartup create validation error",
+                extra={
+                    "by_user": getattr(request.user, "pk", None),
+                    "errors": getattr(e, "detail", str(e)),
+                },
             )
-            raise ValidationError({"non_field_errors": ["Only investors can save startups."]})
-
-        payload = request.data or {}
-
-        # 1) Missing startup -> очікуваний WARN для тесту
-        if "startup" not in payload or payload.get("startup") in (None, "", []):
-            logger.warning(
-                "SavedStartup create failed: missing startup",
-                extra={"by_user": user.pk}
-            )
-
-        # 2) Invalid status -> очікуваний WARN для тесту
-        status_val = payload.get("status")
-        if status_val is not None:
-            status_field = SavedStartup._meta.get_field("status")
-            valid_status = {c[0] for c in status_field.choices}
-            if status_val not in valid_status:
-                logger.warning(
-                    "SavedStartup create failed: invalid status",
-                    extra={"status": status_val, "by_user": user.pk}
-                )
-
-        serializer = self.get_serializer(data=payload)
-        serializer.is_valid(raise_exception=True)
+            raise
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)

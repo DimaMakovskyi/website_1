@@ -1,9 +1,9 @@
 from rest_framework import serializers
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from investors.models import Investor, SavedStartup
 from startups.models import Startup
-from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError
 
 
 class InvestorSerializer(serializers.ModelSerializer):
@@ -78,17 +78,20 @@ class SavedStartupSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         investor = getattr(user, 'investor', None)
+
+        is_create = self.instance is None
+        has_startup_in_payload = 'startup' in attrs
         startup = attrs.get('startup')
 
         errors = {}
         if not investor:
             errors.setdefault('non_field_errors', []).append('Only investors can save startups.')
 
-        if startup is not None and getattr(startup, 'user_id', None) == getattr(user, 'id', None):
-            errors['startup'] = 'You cannot save your own startup.'
-
-        if self.instance is None and startup is None:
+        if is_create and startup is None:
             errors['startup'] = 'This field is required.'
+        if has_startup_in_payload and startup is not None:
+            if getattr(startup, 'user_id', None) == getattr(user, 'id', None):
+                errors.setdefault('startup', 'You cannot save your own startup.')
 
         if errors:
             raise serializers.ValidationError(errors)
@@ -97,26 +100,20 @@ class SavedStartupSerializer(serializers.ModelSerializer):
 def create(self, validated_data):
     request = self.context.get('request')
     user = getattr(request, 'user', None)
-
-    investor = validated_data.pop('investor', getattr(user, 'investor', None))
-    if not investor:
+    if not user or not hasattr(user, 'investor'):
         raise serializers.ValidationError({'non_field_errors': ['Only authenticated investors can save startups.']})
 
-    if validated_data.get('notes') is None:
-        validated_data['notes'] = ''
-
-    obj = self.Meta.model(investor=investor, **validated_data)
-
+    # Створюємо об’єкт, проганяємо модельні валідації, потім зберігаємо
+    obj = SavedStartup(investor=user.investor, **validated_data)
     try:
-        obj.clean()
+        obj.full_clean()  # викличе SavedStartup.clean() → заборона свого стартапу
+        obj.save()
+        return obj
     except DjangoValidationError as e:
-        if hasattr(e, 'message_dict'):
-            raise serializers.ValidationError(e.message_dict)
-        raise serializers.ValidationError({'non_field_errors': e.messages})
-
-    try:
-        with transaction.atomic():
-            obj.save()
-            return obj
+        # Перетворюємо помилки моделі у 400 DRF
+        # e.message_dict (dict полів) або e.messages (список рядків)
+        payload = e.message_dict if hasattr(e, 'message_dict') and e.message_dict else {'non_field_errors': e.messages}
+        raise serializers.ValidationError(payload)
     except IntegrityError:
+        # Дублікат (унікальний констрейнт investor+startup)
         raise serializers.ValidationError({'non_field_errors': ['Already saved.']})

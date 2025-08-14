@@ -1,6 +1,6 @@
 import logging
 from django.db import IntegrityError
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated, BasePermission
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
@@ -8,16 +8,21 @@ from rest_framework.response import Response
 from investors.models import Investor, SavedStartup
 from investors.serializers import InvestorSerializer, SavedStartupSerializer
 
-logger = logging.getLogger(__name__) 
+logger = logging.getLogger(__name__)
 
 
 class InvestorViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing investors.
+    Optimized to avoid N+1 queries when accessing related fields.
+    """
     queryset = Investor.objects.select_related("user", "industry", "location")
     serializer_class = InvestorSerializer
     permission_classes = [IsAuthenticated]
 
 
 class IsSavedStartupOwner(BasePermission):
+    """Allow update/delete only for the owner of the SavedStartup."""
     def has_object_permission(self, request, view, obj):
         if not hasattr(request.user, "investor"):
             return False
@@ -25,13 +30,26 @@ class IsSavedStartupOwner(BasePermission):
 
 
 class SavedStartupViewSet(viewsets.ModelViewSet):
+    """
+    Endpoints:
+      - GET    /api/v1/investors/saved/
+      - POST   /api/v1/investors/saved/
+      - GET    /api/v1/investors/saved/{id}/
+      - PATCH  /api/v1/investors/saved/{id}/
+      - DELETE /api/v1/investors/saved/{id}/
+
+    Permissions:
+      - Auth required for all actions.
+      - Only users with an Investor profile may list/create.
+      - Queryset is scoped to the current investor.
+    """
     permission_classes = [IsAuthenticated, IsSavedStartupOwner]
     serializer_class = SavedStartupSerializer
 
     def get_queryset(self):
         user = self.request.user
         if not hasattr(user, "investor"):
-            logger.warning("SavedStartup list denied for non-investor", extra={"by_user": getattr(user, "pk", None)})
+            # Non-investors get 403 on list
             raise PermissionDenied("Only investors can list saved startups.")
         return (
             SavedStartup.objects
@@ -39,79 +57,37 @@ class SavedStartupViewSet(viewsets.ModelViewSet):
             .filter(investor=user.investor)
             .order_by("-saved_at")
         )
-    
-    
-    def create(self, request, *args, **kwargs):
-        user = request.user
-
-        if not hasattr(user, "investor"):
-            logger.warning(
-                "SavedStartup create denied for non-investor",
-                extra={"by_user": getattr(user, "pk", None)}
-            )
-            raise ValidationError({"non_field_errors": ["Only investors can save startups."]})
-
-        payload = request.data or {}
-
-        # 1) Missing startup -> очікуваний WARN для тесту
-        if "startup" not in payload or payload.get("startup") in (None, "", []):
-            logger.warning(
-                "SavedStartup create failed: missing startup",
-                extra={"by_user": user.pk}
-            )
-
-        # 2) Invalid status -> очікуваний WARN для тесту
-        status_val = payload.get("status")
-        if status_val is not None:
-            status_field = SavedStartup._meta.get_field("status")
-            valid_status = {c[0] for c in status_field.choices}
-            if status_val not in valid_status:
-                logger.warning(
-                    "SavedStartup create failed: invalid status",
-                    extra={"status": status_val, "by_user": user.pk}
-                )
-
-        serializer = self.get_serializer(data=payload)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def perform_create(self, serializer):
+        """
+        - Non-investor on create → 400 (as tests expect).
+        - Forbid saving own startup.
+        - Inject investor from request.user.
+        - Catch duplicate and return friendly error.
+        """
         user = self.request.user
         if not hasattr(user, "investor"):
-            logger.warning("SavedStartup create denied for non-investor", extra={"by_user": getattr(user, "pk", None)})
             raise ValidationError({"non_field_errors": ["Only investors can save startups."]})
 
+        # Explicit validation for missing/invalid startup & status (readable messages)
         startup = serializer.validated_data.get("startup")
         if startup is None:
-            logger.warning("SavedStartup create failed: missing startup", extra={"by_user": user.pk})
             raise ValidationError({"startup": "This field is required."})
 
         status_field = SavedStartup._meta.get_field("status")
         valid_status = {choice[0] for choice in status_field.choices}
         status_val = serializer.validated_data.get("status")
         if status_val and status_val not in valid_status:
-            logger.warning(
-                "SavedStartup create failed: invalid status",
-                extra={"status": status_val, "by_user": user.pk},
-            )
             raise ValidationError({"status": f"Invalid status '{status_val}'."})
 
+        # Forbid saving own startup
         if startup.user_id == user.pk:
-            logger.warning(
-                "SavedStartup create failed: own startup",
-                extra={"startup_id": startup.pk, "by_user": user.pk},
-            )
             raise ValidationError({"startup": "You cannot save your own startup."})
 
         try:
             instance = serializer.save(investor=user.investor)
         except IntegrityError:
-            logger.warning(
-                "SavedStartup create failed: duplicate",
-                extra={"investor_id": user.investor.pk, "startup_id": startup.pk, "by_user": user.pk},
-            )
+            # Unique (investor, startup) already exists
             raise ValidationError({"non_field_errors": ["Already saved."]})
 
         logger.info(
@@ -125,25 +101,28 @@ class SavedStartupViewSet(viewsets.ModelViewSet):
         )
 
     def partial_update(self, request, *args, **kwargs):
+        """
+        Do not allow changing investor/startup via PATCH.
+        Silently drop those fields and update only allowed ones.
+        """
         instance = self.get_object()
         data = request.data.copy()
         data.pop("investor", None)
         data.pop("startup", None)
 
         serializer = self.get_serializer(instance, data=data, partial=True)
-        try:
-            serializer.is_valid(raise_exception=True)
-        except ValidationError as e:
-            logger.warning(
-                "SavedStartup update validation error",
-                extra={"saved_id": instance.pk, "by_user": request.user.pk, "errors": getattr(e, "detail", str(e))},
-            )
-            raise
+        serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
-        logger.info("SavedStartup updated", extra={"saved_id": serializer.instance.pk, "by_user": request.user.pk})
+        logger.info(
+            "SavedStartup updated",
+            extra={"saved_id": serializer.instance.pk, "by_user": request.user.pk},
+        )
         return Response(serializer.data)
 
     def perform_destroy(self, instance):
-        logger.info("SavedStartup deleted", extra={"saved_id": instance.pk, "by_user": self.request.user.pk})
+        logger.info(
+            "SavedStartup deleted",
+            extra={"saved_id": instance.pk, "by_user": self.request.user.pk},
+        )
         super().perform_destroy(instance)
