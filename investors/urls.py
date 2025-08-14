@@ -1,6 +1,8 @@
 from rest_framework.routers import DefaultRouter
 
 from investors.views import InvestorViewSet, SavedStartupViewSet
+from startups.views.startup import StartupViewSet
+
 
 # Register viewsets with the router
 router = DefaultRouter()
