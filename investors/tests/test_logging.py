@@ -70,6 +70,7 @@ class SavedStartupLoggingTests(BaseInvestorTestCase):
             res = self.client.delete(url)
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT, res.data)
         msgs = "\n".join(r.getMessage() for r in cap.records)
+<<<<<<< HEAD
         self.assertTrue("SavedStartup" in msgs and ("delete" in msgs or "deleted" in msgs))
 
     # --- нові тести на WARN/Error-сценарії ---
@@ -140,3 +141,6 @@ class SavedStartupLoggingTests(BaseInvestorTestCase):
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST, res.data)
         msgs = "\n".join(r.getMessage() for r in cap.records)
         self.assertIn("update validation error", msgs.lower())
+=======
+        self.assertTrue("SavedStartup" in msgs and ("delete" in msgs or "deleted" in msgs))
+>>>>>>> 5f826a91f628cf50469dbfcf3281ca3c91c313eb

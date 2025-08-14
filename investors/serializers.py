@@ -1,5 +1,9 @@
 from rest_framework import serializers
 
+<<<<<<< HEAD
+=======
+from rest_framework.validators import UniqueTogetherValidator
+>>>>>>> 5f826a91f628cf50469dbfcf3281ca3c91c313eb
 from investors.models import Investor, SavedStartup
 from startups.models import Startup
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -94,6 +98,7 @@ class SavedStartupSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(errors)
         return attrs
 
+<<<<<<< HEAD
 def create(self, validated_data):
     request = self.context.get('request')
     user = getattr(request, 'user', None)
@@ -120,3 +125,29 @@ def create(self, validated_data):
             return obj
     except IntegrityError:
         raise serializers.ValidationError({'non_field_errors': ['Already saved.']})
+=======
+    def create(self, validated_data):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        if not user or not hasattr(user, 'investor'):
+            raise serializers.ValidationError({'non_field_errors': ['Only authenticated investors can save startups.']})
+
+        if validated_data.get('notes') is None:
+            validated_data['notes'] = ''
+
+        obj = self.Meta.model(**validated_data)
+
+        try:
+            obj.clean() 
+        except DjangoValidationError as e:
+            if hasattr(e, 'message_dict'):
+                raise serializers.ValidationError(e.message_dict)
+            raise serializers.ValidationError({'non_field_errors': e.messages})
+
+        try:
+            with transaction.atomic():
+                obj.save()
+                return obj
+        except IntegrityError:
+            raise serializers.ValidationError({'non_field_errors': ['Already saved.']})
+>>>>>>> 5f826a91f628cf50469dbfcf3281ca3c91c313eb
