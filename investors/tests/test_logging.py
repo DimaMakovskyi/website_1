@@ -4,13 +4,14 @@ from rest_framework import status
 from investors.models import Investor, SavedStartup
 from startups.models import Startup
 from users.models import User, UserRole
-from tests.test_base_case import BaseAPITestCase as BaseInvestorTestCase
+from investors.tests.test_setup import BaseInvestorTestCase
 
 
 class SavedStartupLoggingTests(BaseInvestorTestCase):
     def setUp(self):
         super().setUp()
 
+        # інвестор під автологіненим self.user з BaseInvestorTestCase
         self.investor = Investor.objects.create(
             user=self.user,
             industry=self.industry,
@@ -71,6 +72,7 @@ class SavedStartupLoggingTests(BaseInvestorTestCase):
         msgs = "\n".join(r.getMessage() for r in cap.records)
         self.assertTrue("SavedStartup" in msgs and ("delete" in msgs or "deleted" in msgs))
 
+    # --- нові тести на WARN/Error-сценарії ---
 
     def test_create_logs_missing_startup(self):
         with self.assertLogs("investors.views", level="WARNING") as cap:
@@ -104,8 +106,10 @@ class SavedStartupLoggingTests(BaseInvestorTestCase):
         self.assertIn("own startup", msgs.lower())
 
     def test_create_logs_duplicate(self):
+        # перший успішний save
         first = self.client.post(self.list_url, {"startup": self.startup.id}, format="json")
         self.assertEqual(first.status_code, status.HTTP_201_CREATED, first.data)
+        # дубль
         with self.assertLogs("investors.views", level="WARNING") as cap:
             dup = self.client.post(self.list_url, {"startup": self.startup.id}, format="json")
         self.assertEqual(dup.status_code, status.HTTP_400_BAD_REQUEST, dup.data)

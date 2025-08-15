@@ -58,6 +58,11 @@ class Investor(Company):
         verbose_name = "Investor"
         verbose_name_plural = "Investors"
 
+        indexes = [
+            models.Index(fields=['company_name'], name='investor_company_name_idx'),
+            models.Index(fields=['stage'], name='investor_stage_idx'),
+        ]
+        
 class SavedStartup(models.Model):
     """
     Intermediate model representing a startup saved (bookmarked) by an investor.
@@ -85,9 +90,20 @@ class SavedStartup(models.Model):
     ]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='watching')
     notes = models.TextField(blank=True, null=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
+    def clean(self):
+        # нормалізуємо notes
+        if self.notes is None:
+            self.notes = ""
+
+        inv_user_id = self.investor.user_id if getattr(self, 'investor_id', None) else None
+        st_user_id  = self.startup.user_id  if getattr(self, 'startup_id',  None) else None
+        if inv_user_id is not None and st_user_id is not None and inv_user_id == st_user_id:
+            raise ValidationError({"non_field_errors": ["You cannot save your own startup."]})
+
     def __str__(self):
         return f"{self.investor} saved {self.startup}"
 
@@ -100,13 +116,3 @@ class SavedStartup(models.Model):
         verbose_name = 'Saved Startup'
         verbose_name_plural = 'Saved Startups'
 
-    def clean(self):
-        if self.investor_id and self.startup_id:
-            inv_user_id = getattr(self.investor, 'user_id', None)
-            st_user_id = getattr(self.startup, 'user_id', None)
-            if inv_user_id and st_user_id and st_user_id == inv_user_id:
-                raise ValidationError("You cannot save your own startup.")
-        indexes = [
-            models.Index(fields=['company_name'], name='investor_company_name_idx'),
-            models.Index(fields=['stage'], name='investor_stage_idx'),
-        ]

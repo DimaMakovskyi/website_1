@@ -55,14 +55,12 @@ class SavedStartupViewSet(viewsets.ModelViewSet):
 
         payload = request.data or {}
 
-        # 1) Missing startup -> очікуваний WARN для тесту
         if "startup" not in payload or payload.get("startup") in (None, "", []):
             logger.warning(
                 "SavedStartup create failed: missing startup",
                 extra={"by_user": user.pk},
             )
 
-        # 2) Invalid status -> очікуваний WARN для тесту
         status_val = payload.get("status")
         if status_val is not None:
             status_field = SavedStartup._meta.get_field("status")
@@ -73,7 +71,6 @@ class SavedStartupViewSet(viewsets.ModelViewSet):
                     extra={"status": status_val, "by_user": user.pk},
                 )
 
-        # 3) DUPLICATE -> WARNING до валідації серіалізатора
         startup_id = payload.get("startup")
         if startup_id and SavedStartup.objects.filter(
             investor=user.investor, startup_id=startup_id
@@ -85,7 +82,6 @@ class SavedStartupViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(data=payload)
 
-        # Якщо дубль зловився валідатором (UniqueTogetherValidator) — залогуємо тут і пробросимо помилку
         try:
             serializer.is_valid(raise_exception=True)
         except ValidationError:
@@ -136,7 +132,6 @@ class SavedStartupViewSet(viewsets.ModelViewSet):
         try:
             instance = serializer.save(investor=user.investor)
         except IntegrityError:
-            # fallback — якщо дубль впав на рівні БД
             logger.warning(
                 "SavedStartup create failed: duplicate",
                 extra={"investor_id": user.investor.pk, "startup_id": startup.pk, "by_user": user.pk},
