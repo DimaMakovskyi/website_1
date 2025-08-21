@@ -95,7 +95,6 @@ class SavedStartup(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def clean(self):
-        # нормалізуємо notes
         if self.notes is None:
             self.notes = ""
 
@@ -115,4 +114,9 @@ class SavedStartup(models.Model):
         ordering = ['-saved_at']
         verbose_name = 'Saved Startup'
         verbose_name_plural = 'Saved Startups'
+        indexes = [
+            models.Index(fields=['investor', 'startup'], name='saved_investor_startup_idx'),
+            models.Index(fields=['status'], name='saved_status_idx'),
+            models.Index(fields=['-saved_at'], name='saved_saved_at_desc_idx'),
+        ]
 

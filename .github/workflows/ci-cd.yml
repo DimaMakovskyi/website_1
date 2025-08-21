@@ -33,8 +33,15 @@ jobs:
       GITHUB_CLIENT_ID: ${{ secrets.GIT_CLIENT_ID }}
       GITHUB_CLIENT_SECRET: ${{ secrets.GIT_CLIENT_SECRET }}
       
+      EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
       EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
+      EMAIL_PORT: 587
+      EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
+      EMAIL_USE_TLS: true
+      DEFAULT_FROM_EMAIL: ${{ secrets.DEFAULT_FROM_EMAIL }}
 
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
 
     services:
       db:
@@ -60,6 +67,16 @@ jobs:
           - 9200:9200
         options: >-
           --health-cmd="curl -f http://localhost:9200/_cat/health?h=status"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5

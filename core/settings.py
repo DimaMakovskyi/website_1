@@ -9,16 +9,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
+DOCS_ENABLED = config('DOCS_ENABLED', default=True, cast=bool)
 
 ALLOWED_HOSTS = config(
-    'ALLOWED_HOSTS', 
+    'ALLOWED_HOSTS',
     default='127.0.0.1, localhost, 0.0.0.0',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
 
 # Application definition
 
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
+
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
+    'chat',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -40,9 +46,12 @@ INSTALLED_APPS = [
     'django_filters',
     'corsheaders',
 
+    # API schema / docs
+    'drf_spectacular',
+    'drf_spectacular_sidecar',
+
     # Elasticsearch
     'django_elasticsearch_dsl',
-    'django_elasticsearch_dsl_drf',
 
     # OAuth
     'allauth',
@@ -69,8 +78,8 @@ SOCIALACCOUNT_PROVIDERS = {
         },
         'SCOPE': ['profile', 'email'],
         'AUTH_PARAMS': {
-            'access_type': 'online',
-            'prompt': 'select_account',
+            'access_type': 'offline',
+            'prompt': 'consent', 
         },
         'FETCH_USERINFO': True,
     },
@@ -92,12 +101,6 @@ SOCIALACCOUNT_AUTO_SIGNUP = True
 
 AUTH_USER_MODEL = 'users.User'
 
-ELASTICSEARCH_DSL = {
-    'default': {
-        'hosts': 'localhost:9200'
-    }
-}
-
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -110,11 +113,48 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'user': '5/minute',
         'anon': '2/minute',
+        'resend_email': '5/minute',
+        
     },
 }
 
+# drf-spectacular: use AutoSchema for OpenAPI generation
+REST_FRAMEWORK.update({
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+})
+
 if 'test' in sys.argv:
     REST_FRAMEWORK['DEFAULT_THROTTLE_CLASSES'] = []
+
+# drf-spectacular settings
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Your API',
+    'DESCRIPTION': 'REST API for authentication and account management (and more).',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    # gated by URLConf/env using DOCS_ENABLED
+    'SERVE_PERMISSIONS': ['rest_framework.permissions.AllowAny'],
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SECURITY': [{'bearerAuth': []}],
+    'AUTHENTICATION_WHITELIST': [],
+    'SWAGGER_UI_DIST': 'SIDECAR',
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
+    'POSTPROCESSING_HOOKS': [],
+    'CONTACT': {'name': 'Team', 'email': 'support@example.com'},
+    'LICENSE': {'name': 'Proprietary'},
+    'SCHEMA_PATH_PREFIX': r'/api/v1',
+    'SERVE_URLCONF': None,
+    'ENUM_NAME_OVERRIDES': {},
+    'SCHEMA_EXTENSIONS': [],
+    'SECURITY_SCHEMES': {
+        'bearerAuth': {
+            'type': 'http',
+            'scheme': 'bearer',
+            'bearerFormat': 'JWT',
+        }
+    },
+}
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
@@ -129,16 +169,6 @@ SIMPLE_JWT = {
     'USER_ID_FIELD': 'user_id',
     'USER_ID_CLAIM': 'user_id',
 }
-
-# Backend for password recovery system
-
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.sendgrid.net'
-EMAIL_PORT = 587
-EMAIL_HOST_USER = 'apikey'
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
-EMAIL_USE_TLS = True
-DEFAULT_FROM_EMAIL = 'pbeinner@gmail.com'
 
 DJOSER = {
     'LOGIN_FIELD': 'email',
@@ -167,9 +197,18 @@ DJOSER = {
     },
     'USER_ID_FIELD': 'user_id',
 }
-
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # Email Configuration (for development)
-DEFAULT_FROM_EMAIL = 'noreply@yourdomain.com'
+    
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # Email Configuration (for development)
+    DEFAULT_FROM_EMAIL = 'noreply@yourdomain.com'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = config('EMAIL_HOST')
+    EMAIL_PORT = 587
+    EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+    EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+    EMAIL_USE_TLS = True
+    DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
 
 MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",  # OAuth
@@ -214,9 +253,9 @@ DATABASES = {
     }
 }
 
-#if DEBUG:
+# if DEBUG:
 #    AUTH_PASSWORD_VALIDATORS = []
-#else:
+# else:
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -253,7 +292,11 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS configuration for local development
+CORS_ALLOWED_ORIGINS = [
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
+]
 
 # Elasticsearch DSL Configuration
 ELASTICSEARCH_DSL = {
@@ -305,9 +348,41 @@ ALLOWED_SOCIAL_PLATFORMS = {
     'telegram': ['t.me', 'telegram.me'],
 }
 
+# Communications app: notification types seeding configuration
+COMMUNICATIONS_NOTIFICATION_TYPES = [
+    {
+        'code': 'startup_saved',
+        'name': 'Startup Saved',
+        'description': 'Notification when a user saves a startup to their favorites',
+        'default_frequency': 'immediate',
+        'is_active': True,
+    },
+    {
+        'code': 'project_followed',
+        'name': 'Project Followed',
+        'description': 'Notification when a user follows a project',
+        'default_frequency': 'immediate',
+        'is_active': True,
+    },
+    {
+        'code': 'message_received',
+        'name': 'Message Received',
+        'description': 'Notification when a user receives a new message',
+        'default_frequency': 'immediate',
+        'is_active': True,
+    },
+    {
+        'code': 'project_updated',
+        'name': 'Project Updated',
+        'description': 'Notification when a followed project is updated',
+        'default_frequency': 'daily_digest',
+        'is_active': True,
+    },
+]
+
 # Logs
 LOG_DIR = BASE_DIR / 'logs'
-os.makedirs(LOG_DIR, exist_ok=True)
+LOG_DIR.mkdir(exist_ok=True)
 
 LOGGING = {
     'version': 1,
@@ -334,48 +409,53 @@ LOGGING = {
         },
         'file_django': {
             'level': 'INFO',
-            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'class': 'concurrent_log_handler.ConcurrentRotatingFileHandler',
             'filename': os.path.join(LOG_DIR, 'django.log'),
-            'when': 'midnight',
             'backupCount': 7,
             'formatter': 'verbose',
-            'encoding': 'utf8',
+            'encoding': 'utf-8',
+            'mode': 'a',
+            'delay': True,
         },
         'file_apps': {
             'level': 'DEBUG',
-            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'class': 'concurrent_log_handler.ConcurrentRotatingFileHandler',
             'filename': os.path.join(LOG_DIR, 'apps.log'),
-            'when': 'midnight',
             'backupCount': 7,
             'formatter': 'verbose',
-            'encoding': 'utf8',
+            'encoding': 'utf-8',
+            'mode': 'a',
+            'delay': True,
         },
         'file_errors': {
             'level': 'ERROR',
-            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'class': 'concurrent_log_handler.ConcurrentRotatingFileHandler',
             'filename': os.path.join(LOG_DIR, 'errors.log'),
-            'when': 'midnight',
             'backupCount': 7,
             'formatter': 'verbose',
-            'encoding': 'utf8',
+            'encoding': 'utf-8',
+            'mode': 'a',
+            'delay': True,
         },
         'db_file': {
             'level': 'INFO',
-            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'class': 'concurrent_log_handler.ConcurrentRotatingFileHandler',
             'filename': os.path.join(LOG_DIR, 'db_queries.log'),
-            'when': 'midnight',
             'backupCount': 7,
             'formatter': 'verbose',
-            'encoding': 'utf8',
+            'encoding': 'utf-8',
+            'mode': 'a',
+            'delay': True,
         },
         'file_json': {
-            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'class': 'concurrent_log_handler.ConcurrentRotatingFileHandler',
             'filename': os.path.join(LOG_DIR, 'json_logs.log'),
-            'when': 'midnight',
             'backupCount': 7,
             'formatter': 'json',
             'level': 'INFO',
-            'encoding': 'utf8',
+            'encoding': 'utf-8',
+            'mode': 'a',
+            'delay': True,
         },
     },
     'loggers': {
@@ -438,3 +518,18 @@ CELERY_RESULT_BACKEND = 'rpc://'
 if 'users' in sys.argv:
     CELERY_TASK_ALWAYS_EAGER = True
     CELERY_TASK_EAGER_PROPAGATES = True
+
+# Chat
+ASGI_APPLICATION = "core.asgi.application"
+REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
+REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(REDIS_HOST, REDIS_PORT)],
+        },
+    },
+}
+
+TEST_RUNNER = 'django.test.runner.DiscoverRunner'

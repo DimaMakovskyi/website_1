@@ -12,12 +12,19 @@ logger = logging.getLogger(__name__)
 
 
 class InvestorViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing Investor instances.
+    Optimized with select_related to avoid N+1 queries when fetching related user, industry, and location.
+    """
     queryset = Investor.objects.select_related("user", "industry", "location")
     serializer_class = InvestorSerializer
     permission_classes = [IsAuthenticated]
 
 
 class IsSavedStartupOwner(BasePermission):
+    """
+    Custom permission to allow only the owner of a SavedStartup (its investor) to modify or delete it.
+    """
     def has_object_permission(self, request, view, obj):
         if not hasattr(request.user, "investor"):
             return False
@@ -25,6 +32,10 @@ class IsSavedStartupOwner(BasePermission):
 
 
 class SavedStartupViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing SavedStartup instances.
+    Only authenticated investors who own the SavedStartup can modify/delete it.
+    """
     permission_classes = [IsAuthenticated, IsSavedStartupOwner]
     serializer_class = SavedStartupSerializer
 
@@ -84,7 +95,7 @@ class SavedStartupViewSet(viewsets.ModelViewSet):
 
         try:
             serializer.is_valid(raise_exception=True)
-        except ValidationError:
+        except ValidationError as e:
             if startup_id and SavedStartup.objects.filter(
                 investor=user.investor, startup_id=startup_id
             ).exists():
@@ -92,6 +103,17 @@ class SavedStartupViewSet(viewsets.ModelViewSet):
                     "SavedStartup create failed: duplicate",
                     extra={"investor_id": user.investor.pk, "startup_id": startup_id, "by_user": user.pk},
                 )
+            detail = getattr(e, "detail", {})
+            if isinstance(detail, dict):
+                msgs = detail.get("startup")
+                if msgs:
+                    if not isinstance(msgs, (list, tuple)):
+                        msgs = [msgs]
+                    if any("own startup" in str(m).lower() for m in msgs):
+                        logger.warning(
+                            "SavedStartup create failed: own startup",
+                            extra={"startup_id": startup_id, "by_user": getattr(user, "pk", None)},
+                        )
             raise
 
         self.perform_create(serializer)

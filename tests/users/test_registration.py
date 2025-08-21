@@ -1,11 +1,12 @@
 import json
-from unittest.mock import patch, MagicMock
-from django.test import TestCase, Client
+from unittest.mock import patch
+
+from django.test import Client
 from django.urls import reverse
-from django.core import mail
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
+
 from users.models import User, UserRole
 
 
@@ -166,6 +167,11 @@ class UserRegistrationTests(APITestCase):
         
         self.assertEqual(str(user.user_id), user_id, "User ID in verification link doesn't match")
         
+        user.pending_email = user.email
+        user.email_verification_token = token
+        user.email_verification_sent_at = timezone.now()
+        user.save()
+        
         verification_url = reverse('verify-email', kwargs={'user_id': user_id, 'token': token})
         response = self.client.get(verification_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -196,13 +202,16 @@ class EmailVerificationTests(APITestCase):
             role=self.user_role,
             is_active=False
         )
+        self.user.pending_email = self.user.email
         self.user.email_verification_token = self.verification_token
+        self.user.email_verification_sent_at = timezone.now()
         self.user.save()
     
     def test_verification_with_valid_token(self):
         """Test verification with a valid token."""
         self.user.email_verification_sent_at = timezone.now()
-        self.user.save()
+        self.user.pending_email = None
+        self.user.save(update_fields=['email_verification_sent_at', 'pending_email'])
         
         verification_url = reverse('verify-email', kwargs={'user_id': self.user.user_id, 'token': self.verification_token})
         response = self.client.get(verification_url)
