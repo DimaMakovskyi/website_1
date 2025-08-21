@@ -3,22 +3,23 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models.signals import post_save, post_migrate
 from django.apps import apps
-
 from django.dispatch import receiver
 
 from .models import (
     UserNotificationPreference,
     NotificationType,
     UserNotificationTypePreference,
-    Notification,               
-    NotificationTrigger,       
-    NotificationPriority,       
+    Notification,
+    NotificationTrigger,
+    NotificationPriority,
 )
 
 logger = logging.getLogger(__name__)
 
-_types_seeded = False  
-_handlers: list = []
+_types_seeded = False
+_handlers: list = []  # тримаємо сильні посилання на локальні хендлери
+
+
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_user_notification_preferences(sender, instance, created, **kwargs):
     """
@@ -33,7 +34,7 @@ def create_user_notification_preferences(sender, instance, created, **kwargs):
                 user_preference=preference,
                 notification_type=notification_type,
                 defaults={
-                    'frequency': notification_type.default_frequency,
+                    "frequency": notification_type.default_frequency,
                 },
             )
 
@@ -44,40 +45,41 @@ def create_initial_notification_types(sender, **kwargs):
     Create initial notification types after migrations.
     This ensures the types exist even if the data migration wasn't run.
     """
-    if sender.name == 'communications':
+    if sender.name == "communications":
         global _types_seeded
         if _types_seeded:
             return
-        from django.db import transaction
 
-        notification_types = getattr(settings, 'COMMUNICATIONS_NOTIFICATION_TYPES', None)
+        notification_types = getattr(settings, "COMMUNICATIONS_NOTIFICATION_TYPES", None)
         if not notification_types:
-            logger.info('Skipping notification type seeding: COMMUNICATIONS_NOTIFICATION_TYPES is not set or empty')
+            logger.info(
+                "Skipping notification type seeding: COMMUNICATIONS_NOTIFICATION_TYPES is not set or empty"
+            )
             _types_seeded = True
             return
-        
-        desired_codes = {nt['code'] for nt in notification_types}
+
+        desired_codes = {nt["code"] for nt in notification_types}
         with transaction.atomic():
             existing_codes = set(
-                NotificationType.objects.filter(code__in=desired_codes)
-                .values_list('code', flat=True)
+                NotificationType.objects.filter(code__in=desired_codes).values_list("code", flat=True)
             )
-            to_create = [nt for nt in notification_types if nt['code'] not in existing_codes]
+            to_create = [nt for nt in notification_types if nt["code"] not in existing_codes]
 
             if to_create:
                 objs = [
                     NotificationType(
-                        code=nt['code'],
-                        name=nt['name'],
-                        description=nt.get('description', ''),
-                        default_frequency=nt.get('default_frequency', 'immediate'),
-                        is_active=nt.get('is_active', True),
+                        code=nt["code"],
+                        name=nt["name"],
+                        description=nt.get("description", ""),
+                        default_frequency=nt.get("default_frequency", "immediate"),
+                        is_active=nt.get("is_active", True),
                     )
                     for nt in to_create
                 ]
                 NotificationType.objects.bulk_create(objs, ignore_conflicts=True)
 
         _types_seeded = True
+
 
 def _get_or_create_ntype(code: str, name: str | None = None) -> NotificationType:
     ntype = NotificationType.objects.filter(code=code).first()
@@ -92,6 +94,7 @@ def _get_or_create_ntype(code: str, name: str | None = None) -> NotificationType
     )
     return ntype
 
+
 def _connect_saved_startup_signal():
     try:
         SavedStartup = apps.get_model("investors", "SavedStartup")
@@ -99,7 +102,12 @@ def _connect_saved_startup_signal():
         logger.warning("Could not resolve investors.SavedStartup")
         return
 
-    @receiver(post_save, sender=SavedStartup, dispatch_uid="comm_saved_startup_created", weak=False)
+    @receiver(
+        post_save,
+        sender=SavedStartup,
+        dispatch_uid="comm_saved_startup_created",
+        weak=False,  # критично для CI
+    )
     def notify_startup_followed(sender, instance, created, **kwargs):
         if not created:
             return
@@ -111,12 +119,15 @@ def _connect_saved_startup_signal():
         if not startup_user or not investor_user:
             return
 
-        inv_name = getattr(investor_user, "get_full_name", lambda: "")() or getattr(investor_user, "email", "")
+        inv_name = getattr(investor_user, "get_full_name", lambda: "")() or getattr(
+            investor_user, "email", ""
+        )
         title = "New follower"
         message = f"{inv_name} followed your startup."
 
         ntype = _get_or_create_ntype("startup_followed", "Startup Followed")
 
+        # Ідемпотентність (швидка перевірка)
         base_qs = Notification.objects.filter(
             user=startup_user,
             notification_type=ntype,
@@ -127,6 +138,7 @@ def _connect_saved_startup_signal():
             return
 
         def _create():
+            # Повторна перевірка від гонок
             if Notification.objects.filter(
                 user=startup_user,
                 notification_type=ntype,
@@ -147,10 +159,15 @@ def _connect_saved_startup_signal():
                 action_link=f"/startups/{getattr(startup, 'id', '')}/followers",
             )
 
+        # Викликати одразу, якщо немає активної atomic-транзакції
         conn = transaction.get_connection()
         if conn.in_atomic_block:
             transaction.on_commit(_create)
         else:
             _create()
 
+    # сильний референс, щоб GC не прибрав локальний хендлер у CI
     _handlers.append(notify_startup_followed)
+
+
+_connect_saved_startup_signal()
