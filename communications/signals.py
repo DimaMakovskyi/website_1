@@ -18,7 +18,7 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 _types_seeded = False  
-
+_handlers: list = []
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_user_notification_preferences(sender, instance, created, **kwargs):
     """
@@ -99,7 +99,7 @@ def _connect_saved_startup_signal():
         logger.warning("Could not resolve investors.SavedStartup")
         return
 
-    @receiver(post_save, sender=SavedStartup, dispatch_uid="comm_saved_startup_created")
+    @receiver(post_save, sender=SavedStartup, dispatch_uid="comm_saved_startup_created", weak=False)
     def notify_startup_followed(sender, instance, created, **kwargs):
         if not created:
             return
@@ -147,6 +147,10 @@ def _connect_saved_startup_signal():
                 action_link=f"/startups/{getattr(startup, 'id', '')}/followers",
             )
 
-        transaction.on_commit(_create)
+        conn = transaction.get_connection()
+        if conn.in_atomic_block:
+            transaction.on_commit(_create)
+        else:
+            _create()
 
-_connect_saved_startup_signal()
+    _handlers.append(notify_startup_followed)

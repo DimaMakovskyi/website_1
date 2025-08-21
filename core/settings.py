@@ -36,7 +36,7 @@ INSTALLED_APPS = [
     'investors',
     'projects',
     'startups',
-    'communications',
+    'communications.apps.CommunicationsConfig',
     'dashboard',
     'investments',
     'rest_framework',
