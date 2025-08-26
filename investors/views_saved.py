@@ -68,7 +68,7 @@ class UnsaveStartupView(generics.GenericAPIView):
         ).delete()
 
         return Response(
-            {"startup_id": startup_id, "deleted": bool(deleted_count)},
+            {"startup_id": startup_id, "saved": False, "deleted": bool(deleted_count)},
             status=status.HTTP_200_OK,
         )
 
