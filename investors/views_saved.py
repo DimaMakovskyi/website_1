@@ -62,13 +62,13 @@ class UnsaveStartupView(generics.GenericAPIView):
         if not investor:
             raise PermissionDenied("Only investors can unsave startups.")
 
-        startup = get_object_or_404(Startup, pk=startup_id)
-        deleted, _ = SavedStartup.objects.filter(investor=investor, startup=startup).delete()
+        deleted_count, _ = SavedStartup.objects.filter(
+            investor=investor,
+            startup_id=startup_id,
+        ).delete()
+
         return Response(
-            {
-                "startup_id": startup.id,
-                "saved": False,
-                "deleted": bool(deleted),
-            },
+            {"startup_id": startup_id, "deleted": bool(deleted_count)},
             status=status.HTTP_200_OK,
         )
+
