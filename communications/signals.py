@@ -242,7 +242,7 @@ def _connect_saved_startup_signal():
                 triggered_by_user=investor_user,
                 triggered_by_type=NotificationTrigger.INVESTOR,
                 priority=NotificationPriority.LOW,
-                related_startup_id=getattr(startup, "id", None),
+                related_startup_id=int(getattr(startup, "id", 0) or 0),
             )
             logger.info(
                 "[SIGNAL] Notification created",
