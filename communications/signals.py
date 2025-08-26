@@ -17,7 +17,7 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 _types_seeded = False
-_handlers: list = []  # тримаємо сильні посилання на локальні хендлери
+_handlers: list = []
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
@@ -94,7 +94,6 @@ def _get_or_create_ntype(code: str, name: str | None = None) -> NotificationType
     )
     return ntype
 
-
 def _connect_saved_startup_signal():
     try:
         SavedStartup = apps.get_model("investors", "SavedStartup")
@@ -106,7 +105,7 @@ def _connect_saved_startup_signal():
         post_save,
         sender=SavedStartup,
         dispatch_uid="comm_saved_startup_created",
-        weak=False,  # критично для CI
+        weak=False,
     )
     def notify_startup_followed(sender, instance, created, **kwargs):
         if not created:
@@ -114,9 +113,33 @@ def _connect_saved_startup_signal():
 
         startup = getattr(instance, "startup", None)
         investor = getattr(instance, "investor", None)
-        startup_user = getattr(startup, "user", None) if startup else None
-        investor_user = getattr(investor, "user", None) if investor else None
-        if not startup_user or not investor_user:
+
+        if not startup or not getattr(startup, "pk", None):
+            logger.warning(
+                "Skip notif: startup missing/unsaved",
+                extra={"savedstartup_id": getattr(instance, "pk", None)},
+            )
+            return
+        if not investor or not getattr(investor, "pk", None):
+            logger.warning(
+                "Skip notif: investor missing/unsaved",
+                extra={"savedstartup_id": getattr(instance, "pk", None)},
+            )
+            return
+
+        if not hasattr(startup, "user") or not getattr(startup, "user") or not getattr(startup.user, "pk", None):
+            return
+        if not hasattr(investor, "user") or not getattr(investor, "user") or not getattr(investor.user, "pk", None):
+            return
+
+        startup_user = startup.user
+        investor_user = investor.user
+
+        if startup_user.pk == investor_user.pk:
+            logger.info(
+                "Skip notif: same owner and investor",
+                extra={"user_id": startup_user.pk},
+            )
             return
 
         inv_name = getattr(investor_user, "get_full_name", lambda: "")() or getattr(
@@ -125,9 +148,16 @@ def _connect_saved_startup_signal():
         title = "New follower"
         message = f"{inv_name} followed your startup."
 
-        ntype = _get_or_create_ntype("startup_followed", "Startup Followed")
-
-        # Ідемпотентність (швидка перевірка)
+        ntype = NotificationType.objects.filter(code="startup_followed", is_active=True).first()
+        if not ntype:
+            ntype, _ = NotificationType.objects.get_or_create(
+                code="startup_followed",
+                defaults={
+                    "name": "Startup Followed",
+                    "description": "Investor followed a startup",
+                    "is_active": True,
+                },
+            )
         base_qs = Notification.objects.filter(
             user=startup_user,
             notification_type=ntype,
@@ -138,7 +168,6 @@ def _connect_saved_startup_signal():
             return
 
         def _create():
-            # Повторна перевірка від гонок
             if Notification.objects.filter(
                 user=startup_user,
                 notification_type=ntype,
@@ -156,17 +185,20 @@ def _connect_saved_startup_signal():
                 triggered_by_type=NotificationTrigger.INVESTOR,
                 priority=NotificationPriority.LOW,
                 related_startup_id=getattr(startup, "id", None),
-                action_link=f"/startups/{getattr(startup, 'id', '')}/followers",
             )
 
-        # Викликати одразу, якщо немає активної atomic-транзакції
+        def safe_create():
+            try:
+                _create()
+            except Exception as e:
+                logger.error(f"Failed to create notification: {e}", exc_info=True)
+
         conn = transaction.get_connection()
         if conn.in_atomic_block:
-            transaction.on_commit(_create)
+            transaction.on_commit(safe_create)
         else:
-            _create()
+            safe_create()
 
-    # сильний референс, щоб GC не прибрав локальний хендлер у CI
     _handlers.append(notify_startup_followed)
 
 

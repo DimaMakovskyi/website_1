@@ -86,7 +86,12 @@ class NotificationTriggersTests(TransactionTestCase):
             connection.commit()
         except Exception:
             pass
+
         self.assertEqual(Notification.objects.count(), 1)
+        self.assertEqual(
+            SavedStartup.objects.filter(investor=self.investor, startup=self.startup).count(),
+            1,
+        )
 
         try:
             SavedStartup.objects.create(investor=self.investor, startup=self.startup)
