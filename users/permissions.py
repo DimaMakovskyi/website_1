@@ -2,6 +2,8 @@ import logging
 from rest_framework import permissions
 from startups.models import Startup
 from investors.models import Investor
+from rest_framework.permissions import BasePermission
+from rest_framework import exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -98,4 +100,54 @@ class CanCreateCompanyPermission(permissions.BasePermission):
         if has_startup or has_investor:
             return False
 
+        return True
+
+
+class IsAuthenticatedOr401(BasePermission):
+    """
+    Like IsAuthenticated, but returns 401 instead of 403 when the user is not authenticated.
+    """
+
+    def has_permission(self, request, view):
+        if request.user and request.user.is_authenticated:
+            return True
+        raise exceptions.NotAuthenticated("Authentication credentials were not provided.")
+
+    def authenticate_header(self, request):
+        return 'Bearer'
+
+class IsAuthenticatedInvestor403(BasePermission):
+    """
+    Permission that enforces:
+      - User must be authenticated.
+      - User must have an Investor profile.
+    Any failure → 403 Forbidden (per acceptance criteria).
+    """
+
+    message = "Only authenticated investors are allowed to perform this action."
+
+    def has_permission(self, request, view):
+        user = getattr(request, "user", None)
+
+        if not user or not user.is_authenticated:
+            logger.warning(
+                "Permission denied: unauthenticated user tried to access %s.",
+                view.__class__.__name__,
+            )
+            return False
+
+        is_investor = Investor.objects.filter(user=user).exists()
+        if not is_investor:
+            logger.warning(
+                "Permission denied: user %s is not an investor for %s.",
+                user.id,
+                view.__class__.__name__,
+            )
+            return False
+
+        logger.debug(
+            "Permission granted: user %s is an investor for %s.",
+            user.id,
+            view.__class__.__name__,
+        )
         return True

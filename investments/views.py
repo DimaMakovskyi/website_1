@@ -1,78 +1,88 @@
+import logging
+from django.shortcuts import get_object_or_404
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 from rest_framework import status
-import logging
 
-from rest_framework.permissions import IsAuthenticated
-from .models import Subscription
+from users.cookie_jwt import CookieJWTAuthentication
+from users.permissions import IsAuthenticatedInvestor403  # single permission => 403 for any unauthorized access
+from investments.models import Subscription
+from investments.serializers import SubscriptionCreateSerializer
 from projects.models import Project
-from investments.serializers.subscription_create import SubscriptionCreateSerializer
-from users.permissions import IsInvestor
 
 logger = logging.getLogger(__name__)
 
 class SubscriptionCreateView(CreateAPIView):
     """
-    API endpoint for creating a new investment subscription.
+    Create an investment subscription for a project.
 
-    - Requires authentication and investor role.
-    - Validates funding constraints and prevents invalid investments.
-    - Returns project funding status along with subscription details.
+    Security:
+      - Only authenticated users with an Investor profile are allowed.
+      - Any unauthorized access (unauthenticated or not an investor) results in 403 Forbidden,
+        per the acceptance criteria.
+
+    Notes:
+      - Business validation & atomic updates are performed in the serializer.
+      - We DO NOT manually mutate project's current_funding here to avoid double-counting.
     """
     queryset = Subscription.objects.all()
     serializer_class = SubscriptionCreateSerializer
-    permission_classes = [IsAuthenticated, IsInvestor]
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticatedInvestor403]  # ← satisfies the spec: always 403 for unauthorized
+
+    def _get_project(self):
+        """Resolve the target project from the URL or return 404."""
+        return get_object_or_404(Project, pk=self.kwargs.get("project_id"))
 
     def create(self, request, *args, **kwargs):
-        project_id = self.kwargs["project_id"]
-        try:
-            self.project = Project.objects.get(pk=project_id)
-        except Project.DoesNotExist:
-            return Response(
-                {"project": "Project does not exist."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        serializer = self.get_serializer(data=request.data, context={"request": request, "project": self.project})
+        """
+        Orchestrates subscription creation:
+          1) Validate payload using serializer with project in context.
+          2) Save subscription (serializer handles locking, limits, and funding updates).
+          3) Refresh project and return a concise status payload.
+        """
+        project = self._get_project()
+
+        serializer = self.get_serializer(
+            data=request.data,
+            context={"request": request, "project": project},
+        )
         serializer.is_valid(raise_exception=True)
+
         try:
+            # Serializer.create() performs atomic logic and updates project's funding safely.
             self.perform_create(serializer)
-            subscription = serializer.instance
-
-            self.project.current_funding += subscription.amount
-            self.project.save()
-            remaining_funding = self.project.funding_goal - self.project.current_funding
-            project_status = "Fully funded" if remaining_funding <= 0 else "Partially funded"
-
-            logger.info(
-                "Subscription created successfully for project %s by user %s",
-                self.project.id,
-                request.user.id,
-            )
-
-            return Response(
-                {
-                    "message": "Subscription created successfully.",
-                    "remaining_funding": remaining_funding,
-                    "project_status": project_status,
-                },
-                status=status.HTTP_201_CREATED,
-            )
         except Exception:
-            logger.exception("Failed to create subscription for user %s", getattr(request.user, 'id', None))
+            logger.exception("Failed to create subscription for user %s", getattr(request.user, "id", None))
             return Response(
                 {"detail": "Failed to create subscription. Please try again."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        
-    def perform_create(self, serializer):
-        """
-        Persist a new subscription instance.
 
-        - Retrieves the target project using the `project_id` from the URL.
-        - Associates the subscription with the authenticated investor (`request.user.investor`).
-        - Saves the subscription via the serializer.
-        """
+        # IMPORTANT: Do not manually add the amount here; serializer already updated funding.
+        project.refresh_from_db(fields=["current_funding", "funding_goal"])
+        remaining = project.funding_goal - project.current_funding
+        project_status = "Fully funded" if remaining <= 0 else "Partially funded"
+
+        logger.info(
+            "Subscription created successfully for project %s by user %s",
+            project.id,
+            request.user.id,
+        )
+
+        return Response(
+            {
+                "message": "Subscription created successfully.",
+                "subscription": SubscriptionCreateSerializer(serializer.instance, context={"request": request}).data,
+                "remaining_funding": f"{remaining:.2f}",
+                "project_status": project_status,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    def perform_create(self, serializer):
+        """Persist the subscription bound to the authenticated investor and resolved project."""
         serializer.save(
             investor=self.request.user.investor,
-            project=getattr(self, 'project', None)
+            project=self._get_project(),
         )
