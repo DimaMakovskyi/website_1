@@ -1,4 +1,3 @@
-# tests/investments/test_subscription_permissions.py
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -25,20 +24,20 @@ User = get_user_model()
 )
 class TestSubscriptionPermissions403Policy(TestCase):
     """
-    Перевіряє SubscriptionCreateView з політикою ТЗ:
-      - будь-який неавторизований доступ -> 403 Forbidden
-      - авторизований не-інвестор -> 403 Forbidden
-      - авторизований інвестор -> 201 Created і створюється Subscription
+    Tests SubscriptionCreateView with the spec policy:
+      - any unauthorized access -> 403 Forbidden
+      - authenticated non-investor -> 403 Forbidden
+      - authenticated investor -> 201 Created and a Subscription is created
     """
 
     def setUp(self):
         self.client = APIClient()
 
-        # Ролі
+        # Roles
         self.role_user, _ = UserRole.objects.get_or_create(role="user")
         self.role_investor, _ = UserRole.objects.get_or_create(role="investor")
 
-        # Користувачі
+        # Users
         self.investor_user = User.objects.create(
             email="investor@example.com",
             password=make_password("Pass123!"),
@@ -58,12 +57,12 @@ class TestSubscriptionPermissions403Policy(TestCase):
             role=self.role_user, is_active=True,
         )
 
-        # Довідники
+        # Dictionaries
         self.industry = Industry.objects.create(name="IT")
         self.location = Location.objects.create(country="UA")
         self.category = Category.objects.create(name="Tech")
 
-        # Інвесторський профіль
+        # Investor profile
         Investor.objects.create(
             user=self.investor_user,
             industry=self.industry,
@@ -76,7 +75,7 @@ class TestSubscriptionPermissions403Policy(TestCase):
             fund_size="1000000.00",
         )
 
-        # Стартап та проект
+        # Startup and project
         self.startup = Startup.objects.create(
             user=self.startup_owner,
             industry=self.industry,
@@ -97,22 +96,28 @@ class TestSubscriptionPermissions403Policy(TestCase):
             email="project@coolstartup.com",
         )
 
-        # URL з projects/urls.py
+        # URL from projects/urls.py
         self.url = reverse("project-subscribe", kwargs={"project_id": self.project.id})
 
     def test_unauthenticated_gets_403(self):
-        """Неавторизований → 403 Forbidden."""
+        """Unauthenticated → 403 Forbidden."""
         resp = self.client.post(self.url, {"amount": "100.00"}, format="json")
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN, resp.data)
 
     def test_authenticated_non_investor_gets_403(self):
-        """Авторизований не-інвестор → 403 Forbidden."""
+        """Authenticated non-investor -> 403 Forbidden and no Subscription created."""
+        before = Subscription.objects.count()
+
         self.client.force_authenticate(user=self.non_investor_user)
         resp = self.client.post(self.url, {"amount": "100.00"}, format="json")
+
+        after = Subscription.objects.count()
+
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN, resp.data)
+        self.assertEqual(after, before)  
 
     def test_authenticated_investor_gets_201_and_subscription_created(self):
-        """Авторизований інвестор → 201 Created і Subscription створено."""
+        """Authenticated investor → 201 Created and Subscription is created."""
         self.client.force_authenticate(user=self.investor_user)
         before = Subscription.objects.count()
 
@@ -126,6 +131,6 @@ class TestSubscriptionPermissions403Policy(TestCase):
         self.assertIn("remaining_funding", resp.data)
         self.assertIn("project_status", resp.data)
 
-        # Переконаємось, що проект оновився
+        # Verify that the project was updated
         self.project.refresh_from_db()
         self.assertEqual(self.project.current_funding, Decimal("100.00"))
