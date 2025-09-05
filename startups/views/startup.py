@@ -24,6 +24,7 @@ from rest_framework.filters import OrderingFilter
 from rest_framework import status
 from startups.filters import StartupFilter
 from django_filters import rest_framework as filters
+from startups.filters import StartupFilter
 
 class StartupViewSet(BaseValidatedModelViewSet):
     queryset = Startup.objects.select_related('user', 'industry', 'location') \
@@ -32,9 +33,9 @@ class StartupViewSet(BaseValidatedModelViewSet):
     serializer_class = StartupListSerializer
     permission_classes = [IsAuthenticatedOr401]
     authentication_classes = [CookieJWTAuthentication]
-    filter_backends = [SearchFilter]
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_class = StartupFilter 
     search_fields = ['company_name', 'user__first_name', 'user__last_name', 'email', 'industry__name']
-    filterset_fields = ['industry', 'industry__name', 'stage', 'location__country']
 
     def _get_or_create_user_pref(self, request):
         """Fetch the current user's notification preferences, creating defaults if absent.

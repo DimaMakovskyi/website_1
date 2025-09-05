@@ -33,8 +33,8 @@ class StartupDocumentView(DocumentViewSet):
     filter_fields = {
         'company_name': 'company_name.raw',
         'stage': 'stage.raw',                
-        'location.country': 'location.country', 
-        'country': 'location.country',      
+        'location.country': 'llocation.country.raw', 
+        'country': 'location.country.raw',      
         'industries.name': 'industries.name.raw',
     }
 
