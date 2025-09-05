@@ -31,7 +31,8 @@ class BaseValidatedModelViewSet(viewsets.ModelViewSet):
             instance = serializer.save(user=self.request.user)
         elif action == 'update':
             instance = serializer.save()
-
+        if action == 'create' and getattr(instance, 'user_id', None) is None:
+            instance.user = self.request.user
         logger.info(f"{instance.__class__.__name__} {action}d: {instance}")
         return instance
 

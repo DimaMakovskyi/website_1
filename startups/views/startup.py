@@ -20,7 +20,9 @@ from startups.serializers.startup_list import StartupListSerializer
 from startups.serializers.startup_detail import StartupDetailSerializer
 from decimal import Decimal, InvalidOperation
 from django.db.models import Q
+from rest_framework.filters import OrderingFilter
 from rest_framework import status
+from startups.filters import StartupFilter
 
 class StartupViewSet(BaseValidatedModelViewSet):
     queryset = Startup.objects.select_related('user', 'industry', 'location') \
@@ -186,7 +188,8 @@ class StartupViewSet(BaseValidatedModelViewSet):
             return [IsAuthenticatedOr401(), CanCreateCompanyPermission()]
         if self.action in ('update', 'partial_update', 'destroy'):
             return [IsAuthenticatedOr401(), IsStartupUser()]
-        # list / retrieve -> будь-який автентифікований користувач
+        if self.action in ('preferences', 'update_type_preference'):
+            return [IsAuthenticatedOr401(), IsStartupUser()]
         return [IsAuthenticatedOr401()]
 
     def get_serializer_class(self):
