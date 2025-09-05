@@ -201,9 +201,7 @@ class StartupViewSet(BaseValidatedModelViewSet):
         """
         if self.action == 'create':
             return StartupCreateSerializer
-        if self.action in ('retrieve', 'update', 'partial_update'):
-            return StartupDetailSerializer
-        return StartupListSerializer
+        return StartupSerializer
     
     def _to_bool(self, val: str) -> bool:
         return str(val).lower() in ('1', 'true', 'yes', 'y')
@@ -219,12 +217,9 @@ class StartupViewSet(BaseValidatedModelViewSet):
 
         params = self.request.query_params
 
-        industry_param = params.get('industry') or params.get('industry_name')
-        if industry_param:
-            if str(industry_param).isdigit():
-                qs = qs.filter(industry_id=int(industry_param))
-            else:
-                qs = qs.filter(industry__name__iexact=industry_param)
+        industry_name = params.get('industry')
+        if industry_name:
+            qs = qs.filter(industry__name__iexact=industry_name)
 
         min_team = params.get('min_team_size')
         if min_team:
@@ -233,7 +228,7 @@ class StartupViewSet(BaseValidatedModelViewSet):
             except (TypeError, ValueError):
                 return Startup.objects.none()
 
-        fn_lte = params.get('funding_needed_lte') or params.get('funding_needed__lte')
+        fn_lte = params.get('funding_needed__lte')
         if fn_lte:
             try:
                 qs = qs.filter(funding_needed__lte=Decimal(fn_lte))
