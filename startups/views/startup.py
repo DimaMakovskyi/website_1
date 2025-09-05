@@ -23,6 +23,7 @@ from django.db.models import Q
 from rest_framework.filters import OrderingFilter
 from rest_framework import status
 from startups.filters import StartupFilter
+from django_filters import rest_framework as filters
 
 class StartupViewSet(BaseValidatedModelViewSet):
     queryset = Startup.objects.select_related('user', 'industry', 'location') \
@@ -32,7 +33,8 @@ class StartupViewSet(BaseValidatedModelViewSet):
     permission_classes = [IsAuthenticatedOr401]
     authentication_classes = [CookieJWTAuthentication]
     filter_backends = [SearchFilter]
-    search_fields = ['company_name', 'user__first_name', 'user__last_name', 'email']
+    search_fields = ['company_name', 'user__first_name', 'user__last_name', 'email', 'industry__name']
+    filterset_fields = ['industry', 'industry__name', 'stage', 'location__country']
 
     def _get_or_create_user_pref(self, request):
         """Fetch the current user's notification preferences, creating defaults if absent.
@@ -245,4 +247,25 @@ class StartupViewSet(BaseValidatedModelViewSet):
             qs = qs.filter(location__city__iexact=city)
 
         return qs
-            
+
+class StartupFilterSet(filters.FilterSet):
+    industry = filters.CharFilter(method='filter_industry')
+    stage = filters.CharFilter(field_name='stage', lookup_expr='iexact')
+    location__country = filters.CharFilter(field_name='location__country', lookup_expr='iexact')
+
+    class Meta:
+        model = Startup
+        fields = ['industry', 'stage', 'location__country']
+
+    def filter_industry(self, qs, name, value):
+        if not value:
+            return qs
+        q = Q()
+        # якщо передали ID
+        try:
+            iid = int(value)
+            q |= Q(industry_id=iid) | Q(industries__id=iid)
+        except (TypeError, ValueError):
+            # якщо передали назву (case-insensitive)
+            q |= Q(industry__name__iexact=value) | Q(industries__name__iexact=value)
+        return qs.filter(q).distinct()

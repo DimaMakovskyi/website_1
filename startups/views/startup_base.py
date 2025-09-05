@@ -13,26 +13,25 @@ class BaseValidatedModelViewSet(viewsets.ModelViewSet):
     """
 
     def _validate_and_log(self, serializer, action):
-        """ Validates the model and saves the instance. """
         Model = serializer.Meta.model
-        instance = serializer.instance or Model()
-        for attr, value in serializer.validated_data.items():
-            setattr(instance, attr, value)
-        if action == 'create' and hasattr(instance, 'user') and getattr(instance, 'user', None) is None:
+        # зібрати примірник для clean()
+        instance = serializer.instance or Model(**serializer.validated_data)
+        if action == 'create' and hasattr(instance, 'user') and not getattr(instance, 'user_id', None):
             instance.user = self.request.user
 
+        # ВАЖЛИВО: лише clean(), без full_clean()
         try:
-            instance.full_clean()
+            instance.clean()
         except DjangoValidationError as e:
             logger.warning(f"Validation error during {action}: {e}")
             raise DRFValidationError(e.message_dict)
 
+        # зберегти
         if action == 'create':
             instance = serializer.save(user=self.request.user)
-        elif action == 'update':
+        else:
             instance = serializer.save()
-        if action == 'create' and getattr(instance, 'user_id', None) is None:
-            instance.user = self.request.user
+
         logger.info(f"{instance.__class__.__name__} {action}d: {instance}")
         return instance
 

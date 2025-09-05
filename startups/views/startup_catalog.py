@@ -12,11 +12,12 @@ from startups.serializers.startup_list import StartupListSerializer
 from startups.serializers.startup_detail import StartupDetailSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from users.cookie_jwt import CookieJWTAuthentication
+from .startup import StartupFilterSet
 
 class StartupCatalogViewSet(ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_class = StartupFilter
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_class = StartupFilterSet
     search_fields = ['company_name','description']
     ordering_fields = ['company_name','team_size','funding_needed','created_at']
     ordering = ['company_name']
