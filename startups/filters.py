@@ -8,7 +8,7 @@ class StartupFilter(df.FilterSet):
     city = df.CharFilter(field_name='location__city', lookup_expr='iexact')
     min_team_size = df.NumberFilter(field_name='team_size', lookup_expr='gte')
     funding_needed_lte = df.NumberFilter(field_name='funding_needed', lookup_expr='lte')
-    is_verified = df.BooleanFilter(field_name='verified')
+    is_verified = df.BooleanFilter(field_name='is_verified')
     stage = df.CharFilter(field_name='stage', lookup_expr='iexact')
 
     def filter_industry(self, qs, name, value):

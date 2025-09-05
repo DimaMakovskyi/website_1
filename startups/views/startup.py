@@ -201,7 +201,9 @@ class StartupViewSet(BaseValidatedModelViewSet):
         """
         if self.action == 'create':
             return StartupCreateSerializer
-        return StartupSerializer
+        if self.action in ('retrieve', 'update', 'partial_update'):
+            return StartupDetailSerializer
+        return StartupListSerializer
     
     def _to_bool(self, val: str) -> bool:
         return str(val).lower() in ('1', 'true', 'yes', 'y')
@@ -217,9 +219,12 @@ class StartupViewSet(BaseValidatedModelViewSet):
 
         params = self.request.query_params
 
-        industry_name = params.get('industry')
-        if industry_name:
-            qs = qs.filter(industry__name__iexact=industry_name)
+        industry_param = params.get('industry') or params.get('industry_name')
+        if industry_param:
+            if str(industry_param).isdigit():
+                qs = qs.filter(industry_id=int(industry_param))
+            else:
+                qs = qs.filter(industry__name__iexact=industry_param)
 
         min_team = params.get('min_team_size')
         if min_team:
@@ -228,7 +233,7 @@ class StartupViewSet(BaseValidatedModelViewSet):
             except (TypeError, ValueError):
                 return Startup.objects.none()
 
-        fn_lte = params.get('funding_needed__lte')
+        fn_lte = params.get('funding_needed_lte') or params.get('funding_needed__lte')
         if fn_lte:
             try:
                 qs = qs.filter(funding_needed__lte=Decimal(fn_lte))
@@ -248,25 +253,3 @@ class StartupViewSet(BaseValidatedModelViewSet):
             qs = qs.filter(location__city__iexact=city)
 
         return qs
-
-class StartupFilterSet(filters.FilterSet):
-    industry = filters.CharFilter(method='filter_industry')
-    stage = filters.CharFilter(field_name='stage', lookup_expr='iexact')
-    location__country = filters.CharFilter(field_name='location__country', lookup_expr='iexact')
-
-    class Meta:
-        model = Startup
-        fields = ['industry', 'stage', 'location__country']
-
-    def filter_industry(self, qs, name, value):
-        if not value:
-            return qs
-        q = Q()
-        # якщо передали ID
-        try:
-            iid = int(value)
-            q |= Q(industry_id=iid) | Q(industries__id=iid)
-        except (TypeError, ValueError):
-            # якщо передали назву (case-insensitive)
-            q |= Q(industry__name__iexact=value) | Q(industries__name__iexact=value)
-        return qs.filter(q).distinct()
