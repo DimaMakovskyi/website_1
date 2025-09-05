@@ -5,7 +5,7 @@ from django_elasticsearch_dsl_drf.filter_backends import (
     SearchFilterBackend,
 )
 from django_elasticsearch_dsl_drf.viewsets import DocumentViewSet
-from elasticsearch.exceptions import ConnectionError, TransportError
+from elasticsearch.exceptions import ConnectionError, TransportError, NotFoundError
 from rest_framework import status
 from rest_framework.response import Response
 from startups.documents import StartupDocument
@@ -52,7 +52,7 @@ class StartupDocumentView(DocumentViewSet):
     def list(self, request, *args, **kwargs):
         try:
             return super().list(request, *args, **kwargs)
-        except (ConnectionError, TransportError) as e:
+        except (ConnectionError, TransportError, NotFoundError):
             return Response(
                 {"detail": "Search service is temporarily unavailable. Please try again later."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE

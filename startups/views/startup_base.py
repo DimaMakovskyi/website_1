@@ -14,10 +14,15 @@ class BaseValidatedModelViewSet(viewsets.ModelViewSet):
 
     def _validate_and_log(self, serializer, action):
         """ Validates the model and saves the instance. """
-        instance = serializer.instance or serializer.Meta.model(**serializer.validated_data)
+        Model = serializer.Meta.model
+        instance = serializer.instance or Model()
+        for attr, value in serializer.validated_data.items():
+            setattr(instance, attr, value)
+        if action == 'create' and hasattr(instance, 'user') and getattr(instance, 'user', None) is None:
+            instance.user = self.request.user
 
         try:
-            instance.clean()
+            instance.full_clean()
         except DjangoValidationError as e:
             logger.warning(f"Validation error during {action}: {e}")
             raise DRFValidationError(e.message_dict)
@@ -27,7 +32,7 @@ class BaseValidatedModelViewSet(viewsets.ModelViewSet):
         elif action == 'update':
             instance = serializer.save()
 
-        logger.info(f"Startup {action}d: {instance}")
+        logger.info(f"{instance.__class__.__name__} {action}d: {instance}")
         return instance
 
     def perform_create(self, serializer):
